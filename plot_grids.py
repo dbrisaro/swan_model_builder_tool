@@ -1,98 +1,81 @@
 """Plot SWAN grids"""
 
 import os
+import sys
 import yaml
-import numpy as np
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from pathlib import Path
 from functions.grid import create_grid_lines
 
-def load_config(config_file='/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt'):
-    """Load configuration from YAML file."""
+def read_experiment_config(config_file):
+    """Read experiment configuration from YAML file."""
     with open(config_file, 'r') as f:
         return yaml.safe_load(f)
 
-def plot_grids():
-    """Plot SWAN grids with map background"""
-    # Load configuration
-    config = load_config()
+def main():
+    # Read configuration
+    config_file = Path('/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt')
+    config = read_experiment_config(config_file)
     
-    # Create grid parameters dictionary for regional grid
-    regional_params = {
-        'lon_min': config['grids']['regional']['bounds']['lon_min'],
-        'lon_max': config['grids']['regional']['bounds']['lon_max'],
-        'lat_min': config['grids']['regional']['bounds']['lat_min'],
-        'lat_max': config['grids']['regional']['bounds']['lat_max'],
-        'dx': config['grids']['regional']['resolution']['dx'],
-        'dy': config['grids']['regional']['resolution']['dy'],
-        'name': config['grids']['regional']['name'],
+    # Get grid parameters
+    regional_grid = config['grids']['regional']
+    transition_grid = config['grids']['transition']
+    
+    # Create figure with cartopy projection
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+    
+    # Add coastlines and land
+    ax.add_feature(cfeature.COASTLINE)
+    ax.add_feature(cfeature.LAND, facecolor='lightgray')
+    ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
+    
+    # Create and plot regional grid lines
+    regional_lines = create_grid_lines({
+        'lon_min': regional_grid['bounds']['lon_min'],
+        'lon_max': regional_grid['bounds']['lon_max'],
+        'lat_min': regional_grid['bounds']['lat_min'],
+        'lat_max': regional_grid['bounds']['lat_max'],
+        'dx': regional_grid['resolution']['dx'],
+        'dy': regional_grid['resolution']['dy'],
+        'name': regional_grid['name'],
         'rotation': 0.0
-    }
+    })
+    regional_lines.plot(ax=ax, color='red', linewidth=1.0, alpha=0.7)
     
-    # Create grid parameters dictionary for transition grid
-    transition_params = {
-        'lon_min': config['grids']['transition']['bounds']['lon_min'],
-        'lon_max': config['grids']['transition']['bounds']['lon_max'],
-        'lat_min': config['grids']['transition']['bounds']['lat_min'],
-        'lat_max': config['grids']['transition']['bounds']['lat_max'],
-        'dx': config['grids']['transition']['resolution']['dx'],
-        'dy': config['grids']['transition']['resolution']['dy'],
-        'name': config['grids']['transition']['name'],
+    # Create and plot transition grid lines
+    transition_lines = create_grid_lines({
+        'lon_min': transition_grid['bounds']['lon_min'],
+        'lon_max': transition_grid['bounds']['lon_max'],
+        'lat_min': transition_grid['bounds']['lat_min'],
+        'lat_max': transition_grid['bounds']['lat_max'],
+        'dx': transition_grid['resolution']['dx'],
+        'dy': transition_grid['resolution']['dy'],
+        'name': transition_grid['name'],
         'rotation': 0.0
-    }
+    })
+    transition_lines.plot(ax=ax, color='blue', linewidth=1.0, alpha=0.7)
     
-    # Create grid lines
-    regional_grid = create_grid_lines(regional_params)
-    transition_grid = create_grid_lines(transition_params)
+    # Set plot limits
+    ax.set_xlim(regional_grid['bounds']['lon_min'] - 0.1, regional_grid['bounds']['lon_max'] + 0.1)
+    ax.set_ylim(regional_grid['bounds']['lat_min'] - 0.1, regional_grid['bounds']['lat_max'] + 0.1)
     
-    # Set plot limits with some margin
-    lon_min = min(regional_params['lon_min'], transition_params['lon_min'])
-    lon_max = max(regional_params['lon_max'], transition_params['lon_max'])
-    lat_min = min(regional_params['lat_min'], transition_params['lat_min'])
-    lat_max = max(regional_params['lat_max'], transition_params['lat_max'])
-    margin = 0.5
+    # Add grid
+    ax.gridlines(draw_labels=True)
     
-    # Create figure with Cartopy projection
-    proj = ccrs.PlateCarree()
-    fig, ax = plt.subplots(figsize=(12, 8), subplot_kw={'projection': proj})
+    # Add title and legend
+    plt.title('SWAN Grids')
+    ax.plot([], [], color='red', label='Regional Grid')
+    ax.plot([], [], color='blue', label='Transition Grid')
+    ax.legend()
     
-    # Add map features
-    ax.add_feature(cfeature.LAND, facecolor='lightgray', alpha=0.5)
-    ax.add_feature(cfeature.OCEAN, facecolor='lightblue', alpha=0.5)
-    ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
-    ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
-    
-    # Plot grids
-    for line in regional_grid.geometry:
-        ax.plot(*line.xy, color='blue', linewidth=0.5, alpha=0.7, transform=proj)
-    for line in transition_grid.geometry:
-        ax.plot(*line.xy, color='red', linewidth=0.5, alpha=0.7, transform=proj)
-    
-    # Add custom legend
-    from matplotlib.lines import Line2D
-    legend_elements = [
-        Line2D([0], [0], color='blue', linewidth=1, label='Regional Grid'),
-        Line2D([0], [0], color='red', linewidth=1, label='Transition Grid')
-    ]
-    ax.legend(handles=legend_elements, loc='upper right')
-    
-    # Set extent
-    ax.set_extent([lon_min - margin, lon_max + margin, 
-                   lat_min - margin, lat_max + margin], 
-                  crs=proj)
-    
-    # Add title
-    plt.title('SWAN Model Grids')
-    
-    # Save plot in QGIS directory
-    output_dir = os.path.join('/Users/daniela/Documents/swan/swan_experiments',
-                             config['output']['directory'],
-                             'QGIS')
-    os.makedirs(output_dir, exist_ok=True)
-    plt.savefig(os.path.join(output_dir, 'swan_grids.png'), 
-                dpi=300, bbox_inches='tight')
+    # Save plot
+    output_dir = Path('/Users/daniela/Documents/swan/swan_experiments') / config['output']['directory'] / 'QGIS'
+    output_dir.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_dir / 'swan_grids.png', dpi=300, bbox_inches='tight')
     plt.close()
 
 if __name__ == '__main__':
-    plot_grids() 
+    main() 

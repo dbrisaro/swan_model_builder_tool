@@ -8,10 +8,10 @@ def generate_date_lists(start_date, end_date, frequency):
     
     Parameters
     ----------
-    start_date : str
-        Start date in format 'YYYY-MM-DD'
-    end_date : str
-        End date in format 'YYYY-MM-DD'
+    start_date : str or datetime.date
+        Start date in format 'YYYY-MM-DD' or datetime.date object
+    end_date : str or datetime.date
+        End date in format 'YYYY-MM-DD' or datetime.date object
     frequency : str
         Frequency of data ('daily', 'monthly', etc.)
     
@@ -20,8 +20,16 @@ def generate_date_lists(start_date, end_date, frequency):
     list
         List of dates
     """
-    start = datetime.strptime(start_date, '%Y-%m-%d')
-    end = datetime.strptime(end_date, '%Y-%m-%d')
+    # Convert to datetime objects if they are strings
+    if isinstance(start_date, str):
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+    else:
+        start = datetime.combine(start_date, datetime.min.time())
+    
+    if isinstance(end_date, str):
+        end = datetime.strptime(end_date, '%Y-%m-%d')
+    else:
+        end = datetime.combine(end_date, datetime.min.time())
     
     if frequency == 'daily':
         delta = timedelta(days=1)

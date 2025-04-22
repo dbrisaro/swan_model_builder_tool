@@ -1,23 +1,53 @@
 """Generate SWAN configuration files"""
 
-import os
-import yaml
-from functions.config import generate_config_ini, create_directory_structure
+from pathlib import Path
+
+def generate_swan_config():
+    """Generate SWAN configuration file in the correct format
+    
+    Returns
+    -------
+    str
+        Configuration file content in the correct format
+    """
+    config_str = """[SWAN CONFIG]
+level = 0
+dirNorth = 90
+depthMin = 0.05
+maxMessages = 200
+maxError = 1
+gravity = 9.81
+rho = 1025
+maxDrag = 0.0025
+stationary = False
+spherical = True
+numDir = 36
+freqMin = 0.04
+freqMax = 1.0
+numFreq = 34
+dAbsolute = 0.005
+dRelative = 0.01
+curvature = 0.005
+numPoints = 99.5
+maxIterations = 5
+limiter = 0.01
+outputVars = XP YP HSIGN TPS PDIR DIR UBOT TMBOT FORCE DEPTH
+outputType = .nc
+timeStep = 30
+timeUnit = DAY
+"""
+    return config_str
 
 def main():
-    # Load configuration
-    with open('experiments_specs.txt', 'r') as f:
-        config = yaml.safe_load(f)
-    
-    # Create directory structure
-    base_dir = f"/Users/daniela/Documents/swan/swan_experiments/{config['output']['directory']}"
-    dirs = create_directory_structure(base_dir)
+    # Create output directory
+    output_dir = Path('/Users/daniela/Documents/swan/swan_experiments/run_climatology_southern_peru/SWAN')
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     # Generate SWAN configuration
-    config_str = generate_config_ini(config)
+    config_str = generate_swan_config()
     
     # Write configuration to file
-    config_file = os.path.join(dirs['config'], 'swan_config.ini')
+    config_file = output_dir / 'CONFIG.ini'
     with open(config_file, 'w') as f:
         f.write(config_str)
     
