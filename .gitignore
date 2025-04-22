@@ -38,4 +38,16 @@ ENV/
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Project specific
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf 
