@@ -318,5 +318,3 @@ def linearGrid(x, y, z, xp, yp, grid=False):
     zp[nodata] = np.nan
 
     return zp
-
-

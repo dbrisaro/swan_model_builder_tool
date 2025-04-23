@@ -3,6 +3,8 @@ import sys
 import yaml
 from pathlib import Path
 from swan_functions import SwanBuilder
+from functions.mdatetime import *
+
 
 def read_experiment_config(config_file):
     """Read experiment configuration from YAML file."""
@@ -99,8 +101,8 @@ def main():
     
     # Build and run
     builder.buildRun(
-        timeStart=start_date,
-        timeEnd=end_date
+        timeStart=datenum(start_date),
+        timeEnd=datenum(end_date)
     )
 
 if __name__ == '__main__':
