@@ -43,7 +43,7 @@ def main():
         'name': regional_grid['name'],
         'rotation': 0.0
     })
-    regional_lines.plot(ax=ax, color='red', linewidth=1.0, alpha=0.7)
+    regional_lines.plot(ax=ax, color='red', linewidth=0.5, alpha=0.7)
     
     # Create and plot transition grid lines
     transition_lines = create_grid_lines({
@@ -56,7 +56,7 @@ def main():
         'name': transition_grid['name'],
         'rotation': 0.0
     })
-    transition_lines.plot(ax=ax, color='blue', linewidth=1.0, alpha=0.7)
+    transition_lines.plot(ax=ax, color='blue', linewidth=0.5, alpha=0.7)
     
     # Set plot limits
     ax.set_xlim(regional_grid['bounds']['lon_min'] - 0.1, regional_grid['bounds']['lon_max'] + 0.1)
@@ -71,10 +71,21 @@ def main():
     ax.plot([], [], color='blue', label='Transition Grid')
     ax.legend()
     
+    # Print grid bounding boxes
+    print("\nGrid Bounding Boxes:")
+    print("\nRegional Grid:")
+    print(f"  Longitude: {regional_grid['bounds']['lon_min']:.2f}° to {regional_grid['bounds']['lon_max']:.2f}°")
+    print(f"  Latitude: {regional_grid['bounds']['lat_min']:.2f}° to {regional_grid['bounds']['lat_max']:.2f}°")
+    
+    print("\nTransition Grid:") 
+    print(f"  Longitude: {transition_grid['bounds']['lon_min']:.2f}° to {transition_grid['bounds']['lon_max']:.2f}°")
+    print(f"  Latitude: {transition_grid['bounds']['lat_min']:.2f}° to {transition_grid['bounds']['lat_max']:.2f}°")
+
     # Save plot
     output_dir = Path('/Users/daniela/Documents/swan/swan_experiments') / config['output']['directory'] / 'QGIS'
     output_dir.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_dir / 'swan_grids.png', dpi=300, bbox_inches='tight')
+    print(f"\nFigure saved to: {output_dir / 'swan_grids.png'}")
     plt.close()
 
 if __name__ == '__main__':

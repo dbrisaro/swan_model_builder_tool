@@ -13,7 +13,7 @@ def generate_date_lists(start_date, end_date, frequency):
     end_date : str or datetime.date
         End date in format 'YYYY-MM-DD' or datetime.date object
     frequency : str
-        Frequency of data ('daily', 'monthly', etc.)
+        Frequency of data ('hourly', 'daily', 'monthly', etc.)
     
     Returns
     -------
@@ -31,7 +31,9 @@ def generate_date_lists(start_date, end_date, frequency):
     else:
         end = datetime.combine(end_date, datetime.min.time())
     
-    if frequency == 'daily':
+    if frequency == 'hourly':
+        delta = timedelta(hours=1)
+    elif frequency == 'daily':
         delta = timedelta(days=1)
     elif frequency == 'monthly':
         delta = timedelta(days=30)
@@ -41,7 +43,10 @@ def generate_date_lists(start_date, end_date, frequency):
     dates = []
     current = start
     while current <= end:
-        dates.append(current.strftime('%Y-%m-%d'))
+        if frequency == 'hourly':
+            dates.append(current.strftime('%Y-%m-%d %H:%M:%S'))
+        else:
+            dates.append(current.strftime('%Y-%m-%d'))
         current += delta
     
     return dates

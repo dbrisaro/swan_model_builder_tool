@@ -13,6 +13,19 @@ def parse_experiments_specs(specs_file):
     with open(specs_file, 'r') as f:
         return yaml.safe_load(f)
 
+def check_bounds(bounds, grid_name):
+    """Check if bounds are properly sorted and issue warnings if not."""
+    lon_min, lon_max = bounds['lon_min'], bounds['lon_max']
+    lat_min, lat_max = bounds['lat_min'], bounds['lat_max']
+    
+    if lon_min >= lon_max:
+        print(f"WARNING: Longitude bounds are not properly sorted for {grid_name} grid.")
+        print(f"  lon_min ({lon_min}) should be less than lon_max ({lon_max})")
+    
+    if lat_min >= lat_max:
+        print(f"WARNING: Latitude bounds are not properly sorted for {grid_name} grid.")
+        print(f"  lat_min ({lat_min}) should be less than lat_max ({lat_max})")
+
 def main():
     # Parse experiments specifications
     specs_file = Path('/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt')
@@ -21,6 +34,10 @@ def main():
     # Get grid parameters
     regional_grid = specs['grids']['regional']
     transition_grid = specs['grids']['transition']
+    
+    # Check bounds for both grids
+    check_bounds(regional_grid['bounds'], regional_grid['name'])
+    check_bounds(transition_grid['bounds'], transition_grid['name'])
     
     # Create output directory
     base_dir = Path('/Users/daniela/Documents/swan/swan_experiments')

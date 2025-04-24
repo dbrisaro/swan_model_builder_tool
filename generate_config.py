@@ -1,6 +1,7 @@
 """Generate SWAN configuration files"""
 
 from pathlib import Path
+import yaml
 
 def generate_swan_config():
     """Generate SWAN configuration file in the correct format
@@ -32,15 +33,21 @@ numPoints = 99.5
 maxIterations = 5
 limiter = 0.01
 outputVars = XP YP HSIGN TPS PDIR DIR UBOT TMBOT FORCE DEPTH
-outputType = .nc
-timeStep = 30
-timeUnit = DAY
+outputType = .mat
+timeStep = 3600
+timeUnit = SEC
 """
     return config_str
 
 def main():
-    # Create output directory
-    output_dir = Path('/Users/daniela/Documents/swan/swan_experiments/run_climatology_southern_peru/SWAN')
+    # Read configuration from experiments specs
+    config_file = Path('/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt')
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Get output directory from config
+    base_dir = Path('/Users/daniela/Documents/swan/swan_experiments')
+    output_dir = base_dir / config['output']['directory'] / 'SWAN'
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Generate SWAN configuration
