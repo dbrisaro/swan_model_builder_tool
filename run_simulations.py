@@ -4,6 +4,7 @@
 import os
 import sys
 import yaml
+import platform
 from pathlib import Path
 
 def read_config(config_file):
@@ -43,10 +44,18 @@ def run_simulations(sim_dir, swn_files):
         print("Execution cancelled")
         return
     
+    # Determine the appropriate swanrun command based on OS
+    is_windows = platform.system() == 'Windows'
+    
     # Run simulations in order
     for grid_name, swn_file in swn_files.items():
         print(f"\nRunning SWAN simulation for {swn_file}...")
-        os.system(f"swanrun -input {swn_file}")
+        if is_windows:
+            # Remove .swn extension for Windows
+            file_name = Path(swn_file).stem
+            os.system(f"swanrun {file_name}")
+        else:
+            os.system(f"swanrun -input {swn_file}")
 
 def main():
     # Read configuration
