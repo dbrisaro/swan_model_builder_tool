@@ -53,11 +53,18 @@ def format_date_for_filename(date_obj):
     """Convert date to YYYYMMDD format for filenames."""
     return date_obj.strftime('%Y%m%d')
 
-def main():
+def main(config_path):
     # Read configuration
-    config_file = Path('/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt')
+    ########
+    # SAME AS generate_config and create_grid, so a single function should work for both
+    config_file = Path(config_path)
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+    ########
+    '''
+    config_file = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro/swan_model_builder_tool/experiments_specs.txt')
     config = read_experiment_config(config_file)
-    
+    '''
     # Get grid boundaries from regional grid
     regional_grid = config['grids']['regional']
     lat_min = regional_grid['bounds']['lat_min']
@@ -86,8 +93,12 @@ def main():
                                  frequency)
     
     # Set up paths
-    base_dir = Path('/Users/daniela/Documents/swan/swan_experiments')
+    '''
+    base_dir = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro')
     output_dir = base_dir / config['output']['directory']
+    '''
+    base_path = Path(config['base']['path'])
+    output_dir = base_path / config['output']['directory']
     
     # Check if all required files exist
     bathy_path = output_dir / 'DATA/BATHY' / bathy_file
@@ -113,7 +124,7 @@ def main():
     # Initialize builder
     builder = SwanBuilder(
         rootFolder=str(output_dir / 'SWAN'),
-        templateSource=str(Path('/Users/daniela/Documents/swan/swan_model_builder_tool/template')),
+        templateSource=str(Path(f'{base_path}/swan_model_builder_tool/template')),
         configSource=str(output_dir / 'SWAN/CONFIG.ini'),
         gridSource=str(grid_path),
         bottomSource=[str(bathy_path)],
@@ -122,10 +133,17 @@ def main():
     )
     
     # Build and run
-    builder.buildRun(
+    models = builder.buildRun(
         timeStart=datenum(start_date),
         timeEnd=datenum(end_date)
     )
+    return models
 
 if __name__ == '__main__':
-    main() 
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Run SWAN config generator.')
+    parser.add_argument('--config', type=str, required=True, help='Path to the experiment specifications file')
+    args = parser.parse_args()
+
+    main(args.config)

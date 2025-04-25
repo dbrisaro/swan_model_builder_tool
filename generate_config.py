@@ -39,16 +39,20 @@ timeUnit = SEC
 """
     return config_str
 
-def main():
+def main(config_path):
     # Read configuration from experiments specs
-    config_file = Path('/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt')
+    config_file = Path(config_path)
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
-    
+        
+    '''
     # Get output directory from config
-    base_dir = Path('/Users/daniela/Documents/swan/swan_experiments')
+    base_dir = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro')
     output_dir = base_dir / config['output']['directory'] / 'SWAN'
     output_dir.mkdir(parents=True, exist_ok=True)
+    '''
+    base_path = Path(config['base']['path'])
+    output_dir = base_path / config['output']['directory'] / 'SWAN'
     
     # Generate SWAN configuration
     config_str = generate_swan_config()
@@ -61,4 +65,10 @@ def main():
     print(f"Configuration file generated: {config_file}")
 
 if __name__ == '__main__':
-    main() 
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Run SWAN config generator.')
+    parser.add_argument('--config', type=str, required=True, help='Path to the experiment specifications file')
+    args = parser.parse_args()
+
+    main(args.config)

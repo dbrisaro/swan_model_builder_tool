@@ -1,0 +1,61 @@
+
+# =================================
+# Storm Event Configuration
+# =================================
+
+# Experiment Type
+# --------------
+experiment_type: storm
+region: southern_peru
+
+# Grid Definitions
+# ---------------
+grids:
+  regional:
+    bounds:
+      lon_min: -73.0
+      lon_max: -70.3
+      lat_min: -18.3
+      lat_max: -17.0
+    resolution:
+      dx: 0.05
+      dy: 0.05
+    name: REGIONAL_GRID
+
+  transition:
+    bounds:
+      lon_min: -71.0
+      lon_max: -70.3
+      lat_min: -18.3
+      lat_max: -17.6
+    resolution:
+      dx: 0.01
+      dy: 0.01
+    name: TRANSITION_GRID
+
+# Time Settings
+# ------------
+time:
+  start: 2024-12-15
+  end: 2025-01-15
+  frequency: hourly  # Higher frequency for storm events
+
+# Input Settings
+# --------------
+base:
+  path: /home/jupyter-gabriel/projects/tuflow/swan_dbrisaro/
+
+# Output Settings
+# --------------
+output:
+  directory: run_storm_event_southern_peru
+  subdirectories:
+    - QGIS
+    - SWAN/01_geometry
+    - SWAN/02_bc_dbase
+    - SWAN/03_simulation
+    - SWAN/04_results
+  data:
+    wind: DATA/WIND
+    wave: DATA/WAVE
+    bathy: DATA/BATHY 
