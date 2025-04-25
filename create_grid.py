@@ -26,23 +26,35 @@ def check_bounds(bounds, grid_name):
         print(f"WARNING: Latitude bounds are not properly sorted for {grid_name} grid.")
         print(f"  lat_min ({lat_min}) should be less than lat_max ({lat_max})")
 
-def main():
+def main(config_path):
     # Parse experiments specifications
-    specs_file = Path('/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt')
+    '''
+    specs_file = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro/swan_model_builder_tool/experiments_specs.txt')
     specs = parse_experiments_specs(specs_file)
-    
+    '''
+    ########
+    #SAME AS generate_config, so a single function should work for both
+    config_file = Path(config_path)
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
+    ########
+
     # Get grid parameters
-    regional_grid = specs['grids']['regional']
-    transition_grid = specs['grids']['transition']
+    regional_grid = config['grids']['regional']
+    transition_grid = config['grids']['transition']
     
     # Check bounds for both grids
     check_bounds(regional_grid['bounds'], regional_grid['name'])
     check_bounds(transition_grid['bounds'], transition_grid['name'])
     
     # Create output directory
-    base_dir = Path('/Users/daniela/Documents/swan/swan_experiments')
+    '''
+    base_dir = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro')
     output_dir = base_dir / specs['output']['directory'] / 'QGIS'
     output_dir.mkdir(parents=True, exist_ok=True)
+    '''
+    base_path = Path(config['base']['path'])
+    output_dir = base_path / config['output']['directory'] / 'QGIS'
     
     # Create regional grid
     regional = create_rectangular_grid(
@@ -76,4 +88,10 @@ def main():
     print(f"Grids saved to: {output_dir / 'swan_grids.shp'}")
 
 if __name__ == '__main__':
-    main() 
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Run SWAN config generator.')
+    parser.add_argument('--config', type=str, required=True, help='Path to the experiment specifications file')
+    args = parser.parse_args()
+
+    main(args.config)

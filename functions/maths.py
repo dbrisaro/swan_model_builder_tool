@@ -8,7 +8,7 @@ import matplotlib.path as mplPath
 from matplotlib.tri import LinearTriInterpolator, Triangulation
 
 
-def inPolygon(points, polygon):
+def inPolygon(points, polygon, include_boundary=True):
     """
     Point in polygon routine that uses fast mpl Path object.
 
@@ -26,6 +26,8 @@ def inPolygon(points, polygon):
     """
 
     path = mplPath.Path(polygon)
+    if include_boundary==True:
+        return np.array([path.contains_point(p, radius=1e-10) for p in points])
     return path.contains_points(points)
 
 
