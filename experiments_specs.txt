@@ -43,7 +43,7 @@ time:
 # Input Settings
 # --------------
 base:
-  path: /home/jupyter-gabriel/projects/tuflow/swan_dbrisaro/
+  path: /Users/daniela/Documents/swan/swan_experiments/
 
 # Output Settings
 # --------------

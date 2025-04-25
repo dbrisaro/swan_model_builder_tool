@@ -1,11 +1,16 @@
-"""Useful GIS routines using gdal and add-hoc mesh routines"""
+#!/usr/bin/env python3
+"""Spatial functions for SWAN model"""
+
+import os
+import sys
+import numpy as np
+from netCDF4 import Dataset
+from functions.maths import *
 
 import mimetypes
 from osgeo import gdal, osr, ogr
-from netCDF4 import Dataset
 
 import matplotlib.pyplot as plt
-from .maths import *
 
 
 def getFeatureBoundary(shpFile, field, value):

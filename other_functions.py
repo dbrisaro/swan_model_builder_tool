@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+"""Functions for processing SWAN results"""
+
+import os
+import sys
+import numpy as np
+from netCDF4 import Dataset
+from scipy.io import loadmat
+from functions.mdatetime import *
 
 def convertMat2Nc(matFile, ncFile, isRotated, isNonSpherical):
     """Converts a SWAN result file from .mat to .nc format"""

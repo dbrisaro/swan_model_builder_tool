@@ -124,7 +124,8 @@ def main(config_path):
     # Initialize builder
     builder = SwanBuilder(
         rootFolder=str(output_dir / 'SWAN'),
-        templateSource=str(Path(f'{base_path}/swan_model_builder_tool/template')),
+    #    templateSource=str(Path(f'{base_path}/swan_model_builder_tool/template')),
+        templateSource=str(Path(f'{base_path}/template')),
         configSource=str(output_dir / 'SWAN/CONFIG.ini'),
         gridSource=str(grid_path),
         bottomSource=[str(bathy_path)],
