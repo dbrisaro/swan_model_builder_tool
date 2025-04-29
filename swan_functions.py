@@ -276,19 +276,29 @@ def writeWindGridBc(inFile, outFile, swanModel):
     # get longitude, latitude and time arrays
     x = nc['longitude'][:].data.astype(float)
     y = nc['latitude'][:].data.astype(float)
-
     # flip the y-axis (otherwise descending)
-    y = np.flip(y)
+    # Check if latitudes are descending (going from north to south)
+    if np.all(np.diff(y) < 0):
+        y = np.flip(y)
 
     nc_format = float(nc.getncattr('Conventions').split('-')[1])
 
-    if nc_format > 1.6:
-        t = nc['valid_time'][:].data.astype(float)
-        t = t + datenum((1970, 1, 1))
-
+    if 'valid_time' in nc.variables:
+        time_var = 'valid_time'
+        print('Variable valid_time found')
+    elif 'time' in nc.variables:
+        time_var = 'time'
+        print('Variable time found')
     else:
-        t = nc['time'][:].data.astype(float)
-        t = t * 3600 + datenum((1900, 1, 1))
+        raise KeyError("No se encontró ni 'valid_time' ni 'time' en el archivo NetCDF.")
+    
+    units = nc[time_var].getncattr("units")
+    if "seconds since 1970" in units:
+        t = nc[time_var][:].data.astype(float) + datenum((1970, 1, 1))
+    elif "hours since 1900" in units:
+        t = nc[time_var][:].data.astype(float) * 3600 + datenum((1900, 1, 1))
+    else:
+        raise ValueError(f"Unsupported time units: {units}")
 
     # check if points need to be transformed
     srsA = swanModel.swanGrid.getSrs()
@@ -311,7 +321,7 @@ def writeWindGridBc(inFile, outFile, swanModel):
     # get the model x, y, and t limits
     x1, x2 = mb[:, 0].min(), mb[:, 0].max()
     y1, y2 = mb[:, 1].min(), mb[:, 1].max()
-    t1, t2 = swanModel.timeStart, swanModel.timeEnd\
+    t1, t2 = swanModel.timeStart, swanModel.timeEnd
 
     # find interpolation indices for model domain
     ix = getInterpolationIndex(x, x1, x2)
@@ -325,6 +335,10 @@ def writeWindGridBc(inFile, outFile, swanModel):
 
     # subset dimensions
     ts, xs, ys = t[it], x[ix], y[iy]
+
+    # VALIDACIÓN para evitar errores de 0 puntos
+    assert xs.size >= 2, "Not enough x-points for SWAN input."
+    assert ys.size >= 2, "Not enough y-points for SWAN input."
 
     # transform points to model SRS, note: once transformed points will no longer be a grid
     # therefore average used to approximate grid. This will not exactly match original points.
@@ -365,10 +379,23 @@ def writeWindGridBc(inFile, outFile, swanModel):
         f.write(template.format(x0=x0, y0=y0, mx=(nx - 1), my=(ny - 1), dx=dx, dy=dy,
                                 ts=ts, dt=dt, tf=tf, file=outFile, ni=nx))
 
+
         for ii in it:
-            # read x & y components of wind vector
-            u = np.flipud(nc['u10'][ii, :, :].data)
-            v = np.flipud(nc['v10'][ii, :, :].data)
+            # intentar leer u10 o eastward_wind
+            if 'u10' in nc.variables:
+                u = np.flipud(nc['u10'][ii, :, :].data)
+            elif 'eastward_wind' in nc.variables:
+                u = np.flipud(nc['eastward_wind'][ii, :, :].data)
+            else:
+                raise KeyError("No se encontró ni 'u10' ni 'eastward_wind' en el archivo NetCDF.")
+
+            # intentar leer v10 o northward_wind
+            if 'v10' in nc.variables:
+                v = np.flipud(nc['v10'][ii, :, :].data)
+            elif 'northward_wind' in nc.variables:
+                v = np.flipud(nc['northward_wind'][ii, :, :].data)
+            else:
+                raise KeyError("No se encontró ni 'v10' ni 'northward_wind' en el archivo NetCDF.")
 
             # truncate to grid size
             u = u[np.ix_(iy, ix)]
@@ -446,16 +473,33 @@ def writeWaveGridBc(inFile, outFile, swanModel, spread=12):
     # get longitude, latitude and time arrays
     x = nc['longitude'][:].data.astype(float)
     y = nc['latitude'][:].data.astype(float)
+    # flip the y-axis (otherwise descending)
+    # y = np.flip(y)
+
+    # Check if latitudes are descending (going from north to south)
+    if ~np.all(np.diff(y) < 0):
+        y = np.flip(y)
+
+
 
     nc_format = float(nc.getncattr('Conventions').split('-')[1])
 
-    if nc_format > 1.6:
-        t = nc['valid_time'][:].data.astype(float)
-        t = t + datenum((1970, 1, 1))
-
+    if 'valid_time' in nc.variables:
+        time_var = 'valid_time'
+        print('Variable valid_time found')
+    elif 'time' in nc.variables:
+        time_var = 'time'
+        print('Variable time found')
     else:
-        t = nc['time'][:].data.astype(float)
-        t = t * 3600 + datenum((1900, 1, 1))
+        raise KeyError("No se encontró ni 'valid_time' ni 'time' en el archivo NetCDF.")
+    
+    units = nc[time_var].getncattr("units")
+    if "seconds since 1970" in units:
+        t = nc[time_var][:].data.astype(float) + datenum((1970, 1, 1))
+    elif "hours since 1900" in units:
+        t = nc[time_var][:].data.astype(float) * 3600 + datenum((1900, 1, 1))
+    else:
+        raise ValueError(f"Unsupported time units: {units}")
 
     # check if points need to be transformed
     srsA = swanModel.swanGrid.getSrs()
@@ -513,14 +557,33 @@ def writeWaveGridBc(inFile, outFile, swanModel, spread=12):
     mwd = np.zeros((it.size, xp.size))
     pwp = np.zeros((it.size, xp.size))
 
-    # iterate over time indices
     for aa in range(len(it)):
-        # get wave parameter data
-        hs_ii = nc['swh'][it[aa], :, :].data.astype('float')
-        mwd_ii = nc['mwd'][it[aa], :, :].data.astype('float')
-        pwp_ii = nc['pp1d'][it[aa], :, :].data.astype('float')
+        # altura significativa
+        if 'swh' in nc.variables:
+            hs_ii = nc['swh'][it[aa], :, :].data.astype('float')
+        elif 'VHM0' in nc.variables:
+            hs_ii = nc['VHM0'][it[aa], :, :].data.astype('float')
+        else:
+            raise KeyError("No se encontró ni 'swh' ni 'VHM0' en el NetCDF.")
 
-        if nc_format <= 1.6:
+        # dirección media
+        if 'mwd' in nc.variables:
+            mwd_ii = nc['mwd'][it[aa], :, :].data.astype('float')
+        elif 'VMDR' in nc.variables:
+            mwd_ii = nc['VMDR'][it[aa], :, :].data.astype('float')
+        else:
+            raise KeyError("No se encontró ni 'mwd' ni 'VMDR' en el NetCDF.")
+
+        # periodo pico
+        if 'pp1d' in nc.variables:
+            pwp_ii = nc['pp1d'][it[aa], :, :].data.astype('float')
+        elif 'VTPK' in nc.variables:
+            pwp_ii = nc['VTPK'][it[aa], :, :].data.astype('float')
+        else:
+            raise KeyError("No se encontró ni 'pp1d' ni 'VTPK' en el NetCDF.")
+
+        #if nc_format <= 1.6:
+        if "hours since 1900" in units:    
             # Fill with zero values
             bad = (hs_ii == -32767) | (mwd_ii == -32767) | (pwp_ii == -32767)
             hs_ii[bad] = np.nan
@@ -572,11 +635,16 @@ def writeWaveGridBc(inFile, outFile, swanModel, spread=12):
             f.write('{:.6f},{:.6f},P{:02d}\n'.format(xp[aa], yp[aa], aa))
 
     # start the control string
-    nx, ny = swanModel.swanGrid.getNx(), swanModel.swanGrid.getNy()
+    #    nx, ny = swanModel.swanGrid.getNx(), swanModel.swanGrid.getNy()
+    
+    # TODO this is hardcoded, it should be removed and revised
+    nx = swanModel.swanGrid.getNx() - 2
+    ny = swanModel.swanGrid.getNy() - 2
 
+    # 
     controlString = \
         "BOUND SHAPESPEC PM PEAK DSPR DEGREES\n" + \
-        "BOUNDSPEC SEGMENT IJ 0,0 {mx:},0 {mx:},{my:} 0,{my:} 0,0 VARIABLE FILE &\n".format(mx=nx - 1, my=ny - 1)
+        "BOUNDSPEC SEGMENT IJ 0,0 {mx},0 {mx},{my} 0,{my} 0,0 VARIABLE FILE &\n".format(mx=nx, my=ny)
 
     # start distance counter
     distance = 0.0
