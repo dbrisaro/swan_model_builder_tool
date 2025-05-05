@@ -45,12 +45,7 @@ def main(config_path):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
         
-    '''
-    # Get output directory from config
-    base_dir = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro')
-    output_dir = base_dir / config['output']['directory'] / 'SWAN'
-    output_dir.mkdir(parents=True, exist_ok=True)
-    '''
+
     base_path = Path(config['base']['path'])
     output_dir = base_path / config['output']['directory'] / 'SWAN'
     

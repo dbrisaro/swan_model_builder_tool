@@ -1,3 +1,63 @@
+# =================================
+# Storm Event Configuration (COMMENTED OUT)
+# =================================
+
+# Experiment Type
+# --------------
+#experiment_type: storm
+#region: southern_peru
+
+# Grid Definitions
+# ---------------
+#grids:
+#  regional:
+#    bounds:
+#      lon_min: -73.0
+#      lon_max: -70.3
+#      lat_min: -18.3
+#      lat_max: -17.0
+#    resolution:
+#      dx: 0.05
+#      dy: 0.05
+#    name: REGIONAL_GRID
+
+#  transition:
+#    bounds:
+#      lon_min: -71.5
+#      lon_max: -71
+#      lat_min: -18.1
+#      lat_max: -17.6
+#    resolution:
+#      dx: 0.01
+#      dy: 0.01
+#    name: TRANSITION_GRID
+
+# Time Settings
+# ------------
+#time:
+#  start: 2024-12-15
+#  end: 2025-01-15
+#  frequency: hourly  # Higher frequency for storm events
+
+# Input Settings
+# --------------
+#base:
+#  path: /Users/daniela/Documents/swan/swan_experiments/
+
+# Output Settings
+# --------------
+#output:
+#  directory: run_storm_event_southern_peru_waverys
+#  subdirectories:
+#    - QGIS
+#    - SWAN/01_geometry
+#    - SWAN/02_bc_dbase
+#    - SWAN/03_simulation
+#    - SWAN/04_results
+#  data:
+#    wind: DATA/WIND
+#    wave: DATA/WAVE
+#    bathy: DATA/BATHY 
 
 # =================================
 # Storm Event Configuration
@@ -6,38 +66,38 @@
 # Experiment Type
 # --------------
 experiment_type: storm
-region: southern_peru
+region: peru
 
 # Grid Definitions
 # ---------------
 grids:
   regional:
     bounds:
-      lon_min: -73.0
-      lon_max: -70.3
-      lat_min: -18.3
-      lat_max: -17.0
+      lon_min: -85.0
+      lon_max: -70.0
+      lat_min: -20.0
+      lat_max: -2.0
     resolution:
-      dx: 0.05
-      dy: 0.05
+      dx: 1
+      dy: 1
     name: REGIONAL_GRID
 
   transition:
     bounds:
-      lon_min: -71.0
-      lon_max: -70.3
-      lat_min: -18.3
-      lat_max: -17.6
+      lon_min: -80.5
+      lon_max: -75.5
+      lat_min: -14.5
+      lat_max: -11.0
     resolution:
-      dx: 0.01
-      dy: 0.01
+      dx: 0.2
+      dy: 0.2
     name: TRANSITION_GRID
 
 # Time Settings
 # ------------
 time:
-  start: 2024-12-15
-  end: 2025-01-15
+  start: 2024-12-01
+  end: 2025-01-31
   frequency: hourly  # Higher frequency for storm events
 
 # Input Settings
@@ -48,7 +108,7 @@ base:
 # Output Settings
 # --------------
 output:
-  directory: run_storm_event_southern_peru
+  directory: run_storm_event_peru_waverys_dec_2024
   subdirectories:
     - QGIS
     - SWAN/01_geometry

@@ -61,10 +61,7 @@ def main(config_path):
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
     ########
-    '''
-    config_file = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro/swan_model_builder_tool/experiments_specs.txt')
-    config = read_experiment_config(config_file)
-    '''
+
     # Get grid boundaries from regional grid
     regional_grid = config['grids']['regional']
     lat_min = regional_grid['bounds']['lat_min']
@@ -93,10 +90,7 @@ def main(config_path):
                                  frequency)
     
     # Set up paths
-    '''
-    base_dir = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro')
-    output_dir = base_dir / config['output']['directory']
-    '''
+
     base_path = Path(config['base']['path'])
     output_dir = base_path / config['output']['directory']
     
@@ -121,11 +115,11 @@ def main(config_path):
         print("Error: One or more required files are missing. Please check the paths above.")
         sys.exit(1)
     
+    print(output_dir)
     # Initialize builder
     builder = SwanBuilder(
         rootFolder=str(output_dir / 'SWAN'),
-    #    templateSource=str(Path(f'{base_path}/swan_model_builder_tool/template')),
-        templateSource=str(Path(f'{base_path}/template')),
+        templateSource=str(Path(__file__).parent / 'template'),
         configSource=str(output_dir / 'SWAN/CONFIG.ini'),
         gridSource=str(grid_path),
         bottomSource=[str(bathy_path)],

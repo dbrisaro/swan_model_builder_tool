@@ -28,10 +28,7 @@ def check_bounds(bounds, grid_name):
 
 def main(config_path):
     # Parse experiments specifications
-    '''
-    specs_file = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro/swan_model_builder_tool/experiments_specs.txt')
-    specs = parse_experiments_specs(specs_file)
-    '''
+
     ########
     #SAME AS generate_config, so a single function should work for both
     config_file = Path(config_path)
@@ -40,7 +37,7 @@ def main(config_path):
     ########
 
     # Get grid parameters
-    regional_grid = config['grids']['regional']
+    regional_grid = config['grids']['regional'] 
     transition_grid = config['grids']['transition']
     
     # Check bounds for both grids
@@ -48,11 +45,7 @@ def main(config_path):
     check_bounds(transition_grid['bounds'], transition_grid['name'])
     
     # Create output directory
-    '''
-    base_dir = Path('/home/jupyter-gabriel/projects/tuflow/swan_dbrisaro')
-    output_dir = base_dir / specs['output']['directory'] / 'QGIS'
-    output_dir.mkdir(parents=True, exist_ok=True)
-    '''
+
     base_path = Path(config['base']['path'])
     output_dir = base_path / config['output']['directory'] / 'QGIS'
     
@@ -64,7 +57,8 @@ def main(config_path):
         regional_grid['bounds']['lat_max'],
         regional_grid['resolution']['dx'],
         regional_grid['resolution']['dy'],
-        regional_grid['name']
+        regional_grid['name'],
+        rotation=25.0  # Rotar 45 grados
     )
     regional['grid_type'] = 'regional'  # Add type field
     
@@ -76,7 +70,8 @@ def main(config_path):
         transition_grid['bounds']['lat_max'],
         transition_grid['resolution']['dx'],
         transition_grid['resolution']['dy'],
-        transition_grid['name']
+        transition_grid['name'],
+        rotation=25.0  # Rotar 45 grados
     )
     transition['grid_type'] = 'transition'  # Add type field
     

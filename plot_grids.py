@@ -7,21 +7,69 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from pathlib import Path
-from functions.grid import create_grid_lines
+import geopandas as gpd
+import numpy as np
+import configparser
+import pandas as pd
+from math import cos, sin, radians
 
 def read_experiment_config(config_file):
     """Read experiment configuration from YAML file."""
     with open(config_file, 'r') as f:
         return yaml.safe_load(f)
 
-def main():
-    # Read configuration
-    config_file = Path('/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt')
-    config = read_experiment_config(config_file)
+def parse_specs(config_path):
+    """Parse the configuration file to get grid specifications."""
+    config = configparser.ConfigParser()
+    config.read(config_path)
     
-    # Get grid parameters
-    regional_grid = config['grids']['regional']
-    transition_grid = config['grids']['transition']
+    # Get regional grid specs
+    regional = config['REGIONAL GRID']
+    regional_specs = {
+        'lon_min': float(regional['lon_min']),
+        'lon_max': float(regional['lon_max']),
+        'lat_min': float(regional['lat_min']),
+        'lat_max': float(regional['lat_max']),
+        'x_len': float(regional['x_len']),
+        'y_len': float(regional['y_len']),
+        'rotation': float(regional.get('rotation', 0.0))  # Default to 0 if not specified
+    }
+    
+    # Get transition grid specs
+    transition = config['TRANSITION GRID']
+    transition_specs = {
+        'lon_min': float(transition['lon_min']),
+        'lon_max': float(transition['lon_max']),
+        'lat_min': float(transition['lat_min']),
+        'lat_max': float(transition['lat_max']),
+        'x_len': float(transition['x_len']),
+        'y_len': float(transition['y_len']),
+        'rotation': float(transition.get('rotation', 0.0))  # Default to 0 if not specified
+    }
+    
+    return regional_specs, transition_specs
+
+def get_rotated_grid_points(lon_min, lon_max, lat_min, lat_max, x_len, y_len, rotation):
+    center_lon = (lon_min + lon_max) / 2
+    center_lat = (lat_min + lat_max) / 2
+    lons = np.arange(lon_min, lon_max + x_len, x_len)
+    lats = np.arange(lat_min, lat_max + y_len, y_len)
+    lon_grid, lat_grid = np.meshgrid(lons, lats)
+    points = np.column_stack([lon_grid.flatten(), lat_grid.flatten()])
+    angle = radians(rotation)
+    rot_points = []
+    for lon, lat in points:
+        x = lon - center_lon
+        y = lat - center_lat
+        x_rot = x * cos(angle) - y * sin(angle)
+        y_rot = x * sin(angle) + y * cos(angle)
+        rot_points.append((x_rot + center_lon, y_rot + center_lat))
+    return np.array(rot_points)
+
+def main(config_path):
+    config_file = Path(config_path)
+    with open(config_file, 'r') as f:
+        config = yaml.safe_load(f)
     
     # Create figure with cartopy projection
     fig = plt.figure(figsize=(10, 10))
@@ -31,62 +79,53 @@ def main():
     ax.add_feature(cfeature.COASTLINE)
     ax.add_feature(cfeature.LAND, facecolor='lightgray')
     ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
-    
-    # Create and plot regional grid lines
-    regional_lines = create_grid_lines({
-        'lon_min': regional_grid['bounds']['lon_min'],
-        'lon_max': regional_grid['bounds']['lon_max'],
-        'lat_min': regional_grid['bounds']['lat_min'],
-        'lat_max': regional_grid['bounds']['lat_max'],
-        'dx': regional_grid['resolution']['dx'],
-        'dy': regional_grid['resolution']['dy'],
-        'name': regional_grid['name'],
-        'rotation': 0.0
-    })
-    regional_lines.plot(ax=ax, color='red', linewidth=0.5, alpha=0.7)
-    
-    # Create and plot transition grid lines
-    transition_lines = create_grid_lines({
-        'lon_min': transition_grid['bounds']['lon_min'],
-        'lon_max': transition_grid['bounds']['lon_max'],
-        'lat_min': transition_grid['bounds']['lat_min'],
-        'lat_max': transition_grid['bounds']['lat_max'],
-        'dx': transition_grid['resolution']['dx'],
-        'dy': transition_grid['resolution']['dy'],
-        'name': transition_grid['name'],
-        'rotation': 0.0
-    })
-    transition_lines.plot(ax=ax, color='blue', linewidth=0.5, alpha=0.7)
-    
-    # Set plot limits
-    ax.set_xlim(regional_grid['bounds']['lon_min'] - 0.1, regional_grid['bounds']['lon_max'] + 0.1)
-    ax.set_ylim(regional_grid['bounds']['lat_min'] - 0.1, regional_grid['bounds']['lat_max'] + 0.1)
-    
-    # Add grid
+
+    # Regional grid
+    reg = config['grids']['regional']
+    reg_points = get_rotated_grid_points(
+        reg['bounds']['lon_min'], reg['bounds']['lon_max'],
+        reg['bounds']['lat_min'], reg['bounds']['lat_max'],
+        reg['resolution']['dx'], reg['resolution']['dy'],
+        25.0  # rotation angle in degrees
+    )
+    ax.scatter(reg_points[:,0], reg_points[:,1], color='red', s=2, alpha=0.7, 
+               label='Regional Grid', transform=ccrs.PlateCarree())
+
+    # Transition grid
+    trans = config['grids']['transition']
+    trans_points = get_rotated_grid_points(
+        trans['bounds']['lon_min'], trans['bounds']['lon_max'],
+        trans['bounds']['lat_min'], trans['bounds']['lat_max'],
+        trans['resolution']['dx'], trans['resolution']['dy'],
+        25.0  # rotation angle in degrees
+    )
+    ax.scatter(trans_points[:,0], trans_points[:,1], color='blue', s=2, alpha=0.7, 
+               label='Transition Grid', transform=ccrs.PlateCarree())
+
+    # Set plot limits with some padding
+    ax.set_extent([
+        reg['bounds']['lon_min'] - 1, 
+        reg['bounds']['lon_max'] + 1,
+        reg['bounds']['lat_min'] - 1, 
+        reg['bounds']['lat_max'] + 1
+    ], crs=ccrs.PlateCarree())
+
+    # Add gridlines
     ax.gridlines(draw_labels=True)
     
-    # Add title and legend
-    plt.title('SWAN Grids')
-    ax.plot([], [], color='red', label='Regional Grid')
-    ax.plot([], [], color='blue', label='Transition Grid')
+    ax.set_title('SWAN Grids')
     ax.legend()
-    
-    # Print grid bounding boxes
-    print("\nGrid Bounding Boxes:")
-    print("\nRegional Grid:")
-    print(f"  Longitude: {regional_grid['bounds']['lon_min']:.2f}° to {regional_grid['bounds']['lon_max']:.2f}°")
-    print(f"  Latitude: {regional_grid['bounds']['lat_min']:.2f}° to {regional_grid['bounds']['lat_max']:.2f}°")
-    
-    print("\nTransition Grid:") 
-    print(f"  Longitude: {transition_grid['bounds']['lon_min']:.2f}° to {transition_grid['bounds']['lon_max']:.2f}°")
-    print(f"  Latitude: {transition_grid['bounds']['lat_min']:.2f}° to {transition_grid['bounds']['lat_max']:.2f}°")
 
-    # Save plot
-    output_dir = Path('/Users/daniela/Documents/swan/swan_experiments') / config['output']['directory'] / 'QGIS'
+    base_path = Path(config['base']['path'])
+    output_dir = base_path / config['output']['directory'] / 'QGIS'
     output_dir.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_dir / 'swan_grids.png', dpi=300, bbox_inches='tight')
     print(f"\nFigure saved to: {output_dir / 'swan_grids.png'}")
     plt.close()
 
-if __name__ == '__main__':
-    main() 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Create and plot SWAN grids')
+    parser.add_argument('--config', required=True, help='Path to the configuration file')
+    args = parser.parse_args()
+    
+    main(args.config)

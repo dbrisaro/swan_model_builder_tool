@@ -7,155 +7,257 @@ import yaml
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.io import loadmat
-from netCDF4 import Dataset
-from other_functions import convertMat2Nc, extractSwanTs
-from functions.mdatetime import *
+import xarray as xr
+import pandas as pd
+from other_functions import convertMat2Nc
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 def read_config(config_file):
-    """Read experiment configuration from YAML file."""
+    """Read configuration from YAML file"""
     with open(config_file, 'r') as f:
-        return yaml.safe_load(f)
+        config = yaml.safe_load(f)
+    return config
+
+def check_nc_file(nc_file):
+    """Print information about the NetCDF file contents"""
+    print(f"\nChecking file: {nc_file}")
+    
+    # Open dataset
+    ds = xr.open_dataset(nc_file)
+    
+    # Print basic information
+    print("\nDimensions:")
+    for dim, size in ds.dims.items():
+        print(f"  {dim}: {size}")
+    
+    print("\nVariables:")
+    for var in ds.variables:
+        print(f"  {var}:")
+        print(f"    shape: {ds[var].shape}")
+        print(f"    dtype: {ds[var].dtype}")
+        if 'units' in ds[var].attrs:
+            print(f"    units: {ds[var].attrs['units']}")
+    
+    # Check if Xp and Yp are 2D (which they should be for rotated grids)
+    print("\nGrid structure:")
+    print(f"  Xp dimensions: {ds.Xp.dims}")
+    print(f"  Yp dimensions: {ds.Yp.dims}")
+    
+    # Plot first timestep of Hsig with coordinates to check rotation
+    plt.figure(figsize=(10, 8))
+    plt.pcolormesh(ds.Xp, ds.Yp, ds.Hsig[0])
+    plt.colorbar(label='Hsig [m]')
+    plt.title(f'First timestep Hsig - {Path(nc_file).stem}')
+    plt.savefig(f'check_{Path(nc_file).stem}.png')
+    plt.close()
+    
+    ds.close()
 
 def process_mat_files(results_dir, output_dir):
-    """Process all .mat files in the results directory."""
+    """Convert .mat files to .nc format"""
     # Create output directory if it doesn't exist
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Process each .mat file
-    for mat_file in Path(results_dir).glob('*.mat'):
-        print(f"Processing {mat_file.name}...")
-        
-        # Convert to NetCDF
+    for mat_file in results_dir.glob('*.mat'):
         nc_file = output_dir / f"{mat_file.stem}.nc"
-        convertMat2Nc(str(mat_file), str(nc_file), isRotated=False, isNonSpherical=False)
+        print(f"Converting {mat_file} to {nc_file} (rotated: True, angle: 25°)")
+        convertMat2Nc(str(mat_file), str(nc_file), isRotated=True, isNonSpherical=True)
         
-        # Extract time series at specific points (if points file exists)
-        points_file = Path('points.csv')  # You should create this file with your points of interest
-        if points_file.exists():
-            ts_file = output_dir / f"{mat_file.stem}_timeseries.csv"
-            extractSwanTs(str(nc_file), str(ts_file), str(points_file))
+        # Check the generated NC file
+        check_nc_file(nc_file)
 
-def calculate_statistics(nc_file):
-    """Calculate basic statistics from NetCDF file."""
-    with Dataset(nc_file, 'r') as nc:
-        stats = {}
-        for var in nc.variables:
-            if nc[var].ndim == 3:  # Time-varying variables
-                data = nc[var][:]
-                stats[var] = {
-                    'mean': np.nanmean(data),
-                    'max': np.nanmax(data),
-                    'min': np.nanmin(data),
-                    'std': np.nanstd(data)
-                }
-        return stats
+def plot_daily_mean_hsig(nc_file, output_dir, start_date, end_date):
+    """Generate maps of daily mean significant wave height."""
+    # Open the dataset with xarray
+    ds = xr.open_dataset(nc_file)
+    
+    # Convert time to datetime64
+    ds['time'] = pd.to_datetime(ds.time.values, unit='s')
+    
+    # Select time period
+    start = pd.to_datetime(start_date)
+    end = pd.to_datetime(end_date)
+    ds_period = ds.sel(time=slice(start, end))
+    
+    # Calculate daily mean
+    daily_mean = ds_period['Hsig'].resample(time='1D').mean()
+    
+    # Get global min and max for colorbar limits
+    vmin = daily_mean.min().values
+    vmax = daily_mean.max().values
+    
+    # Create maps directory
+    maps_dir = Path(output_dir) / 'maps' / f"{start_date.replace('/', '-')}_to_{end_date.replace('/', '-')}"
+    maps_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Calculate number of rows and columns for subplots
+    n_days = len(daily_mean.time)
+    n_cols = 4  # Increased number of columns
+    n_rows = (n_days + n_cols - 1) // n_cols  # Calculate number of rows needed
+    
+    # Create a figure with subplots in a grid
+    fig = plt.figure(figsize=(20, 4*n_rows))
+    gs = plt.GridSpec(n_rows, n_cols, figure=fig)
+    
+    # Create a list to store all the plots
+    plots = []
+    
+    # Plot each day
+    for i, day in enumerate(daily_mean.time):
+        row = i // n_cols
+        col = i % n_cols
+        ax = fig.add_subplot(gs[row, col], projection=ccrs.PlateCarree())
+        
+        # Get data for this day
+        data = daily_mean.sel(time=day).values
+        
+        # For rotated grids, Xp and Yp are 2D arrays
+        x = ds.Xp.values
+        y = ds.Yp.values
+        
+        # Plot data with fixed colorbar limits
+        im = ax.pcolormesh(x, y, data,
+                          transform=ccrs.PlateCarree(),
+                          cmap='viridis',
+                          vmin=vmin,
+                          vmax=vmax,
+                          shading='nearest')  # Changed to 'nearest' to handle same dimensions
+        plots.append(im)
+        
+        # Add map features - LAND should be solid color to mask data
+        ax.add_feature(cfeature.LAND, facecolor='lightgray', zorder=100)
+        ax.add_feature(cfeature.COASTLINE, zorder=101)
+        ax.add_feature(cfeature.BORDERS, linestyle=':', zorder=102)
+        
+        # Add lat/lon labels
+        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+        gl.top_labels = False
+        gl.right_labels = False
+        
+        # Add title aligned to the left
+        date_str = pd.to_datetime(day.values).strftime('%Y-%m-%d')
+        ax.set_title(f'Daily Mean Hsig - {date_str}', loc='left', pad=10)
+    
+    # Add a single colorbar for all plots
+    cbar_ax = fig.add_axes([0.25, 0.02, 0.5, 0.02])  # [left, bottom, width, height]
+    cbar = fig.colorbar(plots[0], cax=cbar_ax, orientation='horizontal')
+    cbar.set_label('Hsig [m]')
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    grid_name = Path(nc_file).stem.split('_')[0]
+    plt.savefig(maps_dir / f'{grid_name}_daily_mean_hsig.png',
+               bbox_inches='tight', dpi=300)
+    plt.close()
+    
+    # Close the dataset
+    ds.close()
 
-def plot_results(nc_file, output_dir):
-    """Generate basic plots from NetCDF file."""
-    with Dataset(nc_file, 'r') as nc:
-        # Create plots directory
-        plots_dir = Path(output_dir) / 'plots'
-        plots_dir.mkdir(exist_ok=True)
+def extract_time_series(nc_file, output_dir, start_date, end_date):
+    """Extract and plot time series at specific points."""
+    # Open the dataset with xarray
+    ds = xr.open_dataset(nc_file)
+    
+    # Convert time to datetime64
+    ds['time'] = pd.to_datetime(ds.time.values, unit='s')
+    
+    # Select time period
+    start = pd.to_datetime(start_date)
+    end = pd.to_datetime(end_date)
+    ds_period = ds.sel(time=slice(start, end))
+    
+    # Read points from CSV
+    points_df = pd.read_csv('points.csv')
+    
+    # Create time series directory
+    ts_dir = Path(output_dir) / 'time_series' / f"{start_date.replace('/', '-')}_to_{end_date.replace('/', '-')}"
+    ts_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Get coordinates
+    x = ds.Xp.values
+    y = ds.Yp.values
+    
+    # Convert coordinates to lat/lon if they're in meters
+    if ds.Xp.units == 'm':
+        # Get the grid bounds from the config file
+        config_file = Path('experiments_specs.txt')
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
         
-        # Plot time series for each variable
-        for var in nc.variables:
-            if nc[var].ndim == 3:  # Time-varying variables
-                plt.figure(figsize=(10, 6))
-                data = nc[var][:]
-                time = nc['time'][:]
-                
-                # Plot mean over space
-                plt.plot(time, np.nanmean(data, axis=(1, 2)))
-                plt.title(f'{var} Time Series')
-                plt.xlabel('Time')
-                plt.ylabel(nc[var].units)
-                
-                # Save plot
-                plt.savefig(plots_dir / f'{var}_timeseries.png')
-                plt.close()
-
-def plot_maps(nc_file, output_dir, time_indices=None):
-    """Generate maps for each variable at different times."""
-    with Dataset(nc_file, 'r') as nc:
-        # Create maps directory
-        maps_dir = Path(output_dir) / 'maps'
-        maps_dir.mkdir(exist_ok=True)
+        # Get bounds for the current grid
+        grid_name = Path(nc_file).stem.split('_')[0]
+        grid_config = config['grids'][grid_name.lower()]
+        lon_min = grid_config['bounds']['lon_min']
+        lon_max = grid_config['bounds']['lon_max']
+        lat_min = grid_config['bounds']['lat_min']
+        lat_max = grid_config['bounds']['lat_max']
         
-        # Get coordinates
-        lon = nc['longitude'][:]
-        lat = nc['latitude'][:]
+        # Create lat/lon arrays
+        lon = np.linspace(lon_min, lon_max, len(x))
+        lat = np.linspace(lat_min, lat_max, len(y))
+    else:
+        lon = x
+        lat = y
+    
+    # Create a meshgrid for interpolation
+    lon_grid, lat_grid = np.meshgrid(lon, lat)
+    
+    # Create figure for time series
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    # Extract and plot time series for each point
+    for _, point in points_df.iterrows():
+        # Find nearest grid point
+        dist = np.sqrt((lon_grid - point['LON'])**2 + (lat_grid - point['LAT'])**2)
+        idx = np.unravel_index(np.argmin(dist), dist.shape)
         
-        # If no specific time indices provided, use first, middle and last time step
-        if time_indices is None:
-            n_times = len(nc['time'])
-            time_indices = [0, n_times//2, -1]
+        # Extract time series
+        ts = ds_period['Hsig'].isel(Xp=idx[1], Yp=idx[0])
         
-        # Plot maps for each variable
-        for var in nc.variables:
-            if nc[var].ndim == 3:  # Time-varying variables
-                data = nc[var][:]
-                
-                for t_idx in time_indices:
-                    # Create figure with cartopy projection
-                    fig = plt.figure(figsize=(12, 8))
-                    ax = plt.axes(projection=ccrs.PlateCarree())
-                    
-                    # Add map features
-                    ax.add_feature(cfeature.LAND)
-                    ax.add_feature(cfeature.COASTLINE)
-                    ax.add_feature(cfeature.BORDERS, linestyle=':')
-                    
-                    # Plot data
-                    im = ax.pcolormesh(lon, lat, data[t_idx], 
-                                     transform=ccrs.PlateCarree(),
-                                     cmap='viridis')
-                    
-                    # Add colorbar
-                    cbar = plt.colorbar(im, ax=ax, orientation='horizontal', pad=0.05)
-                    cbar.set_label(nc[var].units)
-                    
-                    # Add title and labels
-                    time_str = nc['time'][t_idx]
-                    plt.title(f'{var} at time {time_str}')
-                    ax.set_xlabel('Longitude')
-                    ax.set_ylabel('Latitude')
-                    
-                    # Save plot
-                    plt.savefig(maps_dir / f'{var}_map_t{t_idx}.png', 
-                              bbox_inches='tight', dpi=300)
-                    plt.close()
+        # Plot time series
+        ax.plot(ts.time, ts.values, label=point['NAME'])
+    
+    # Customize plot
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Hsig [m]')
+    ax.set_title('Significant Wave Height Time Series')
+    ax.legend()
+    ax.grid(True)
+    
+    # Save figure
+    grid_name = Path(nc_file).stem.split('_')[0]
+    plt.savefig(ts_dir / f'{grid_name}_time_series.png',
+               bbox_inches='tight', dpi=300)
+    plt.close()
+    
+    # Close the dataset
+    ds.close()
 
 def main():
     # Read configuration
-    config_file = Path('/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt')
+    config_file = Path('experiments_specs.txt')
     config = read_config(config_file)
     
-    # Set up paths
-    base_dir = Path('/Users/daniela/Documents/swan/swan_experiments')
-    results_dir = base_dir / config['output']['directory'] / 'SWAN/04_results'
-    output_dir = base_dir / config['output']['directory'] / 'processed_results'
+    # Read dates from CSV
+    dates_df = pd.read_csv('dates.csv')
+    start_date = dates_df['START_DATE'].iloc[0]
+    end_date = dates_df['END_DATE'].iloc[0]
+    
+    # Set up paths using base_path from config
+    base_path = Path(config['base']['path'])
+    results_dir = base_path / config['output']['directory'] / 'SWAN/04_results'
+    output_dir = base_path / config['output']['directory'] / 'processed_results'
     
     # Process results
     process_mat_files(results_dir, output_dir)
     
-    # Calculate statistics and generate plots for each NetCDF file
+    # Generate maps and time series for each NetCDF file
     for nc_file in output_dir.glob('*.nc'):
-        stats = calculate_statistics(str(nc_file))
-        print(f"\nStatistics for {nc_file.name}:")
-        for var, values in stats.items():
-            print(f"{var}:")
-            for stat, value in values.items():
-                print(f"  {stat}: {value:.2f}")
-        
-        # Generate time series plots
-        plot_results(str(nc_file), output_dir)
-        
-        # Generate maps
-        plot_maps(str(nc_file), output_dir)
+        plot_daily_mean_hsig(str(nc_file), output_dir, start_date, end_date)
+        extract_time_series(str(nc_file), output_dir, start_date, end_date)
 
 if __name__ == '__main__':
     main()
