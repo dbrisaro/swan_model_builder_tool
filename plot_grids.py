@@ -13,16 +13,7 @@ import configparser
 import pandas as pd
 from math import cos, sin, radians
 
-def read_experiment_config(config_file):
-    """Read experiment configuration from YAML file."""
-    with open(config_file, 'r') as f:
-        return yaml.safe_load(f)
-
-def parse_specs(config_path):
-    """Parse the configuration file to get grid specifications."""
-    config = configparser.ConfigParser()
-    config.read(config_path)
-
+def parse_specs(config):
     # Get rotation
     rotation = config['rotation']
     
@@ -69,11 +60,7 @@ def get_rotated_grid_points(lon_min, lon_max, lat_min, lat_max, x_len, y_len, ro
         rot_points.append((x_rot + center_lon, y_rot + center_lat))
     return np.array(rot_points)
 
-def main(config_path):
-    config_file = Path(config_path)
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
-    
+def main(config):
     # Create figure with cartopy projection
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())

@@ -8,11 +8,6 @@ import geopandas as gpd
 import pandas as pd
 from swan_functions import create_rectangular_grid
 
-def parse_experiments_specs(specs_file):
-    """Parse experiments specifications file."""
-    with open(specs_file, 'r') as f:
-        return yaml.safe_load(f)
-
 def check_bounds(bounds, grid_name):
     """Check if bounds are properly sorted and issue warnings if not."""
     lon_min, lon_max = bounds['lon_min'], bounds['lon_max']
@@ -26,13 +21,7 @@ def check_bounds(bounds, grid_name):
         print(f"WARNING: Latitude bounds are not properly sorted for {grid_name} grid.")
         print(f"  lat_min ({lat_min}) should be less than lat_max ({lat_max})")
 
-def main(config_path):
-    ########
-    #SAME AS generate_config, so a single function should work for both
-    config_file = Path(config_path)
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
-    ########
+def main(config):
 
     # Get grid parameters
     regional_grid = config['grids']['regional'] 

@@ -5,11 +5,6 @@ from pathlib import Path
 from swan_functions import SwanBuilder
 from functions.mdatetime import *
 
-def read_experiment_config(config_file):
-    """Read experiment configuration from YAML file."""
-    with open(config_file, 'r') as f:
-        return yaml.safe_load(f)
-
 def generate_file_name(prefix, start_date, end_date, lat_min, lat_max, lon_min, lon_max, extension, frequency=None):
     """Generate file name using grid boundaries and dates.
     
@@ -52,14 +47,7 @@ def format_date_for_filename(date_obj):
     """Convert date to YYYYMMDD format for filenames."""
     return date_obj.strftime('%Y%m%d')
 
-def main(config_path):
-    # Read configuration
-    ########
-    # SAME AS generate_config and create_grid, so a single function should work for both
-    config_file = Path(config_path)
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
-    ########
+def main(config):
 
     # Get grid boundaries from regional grid
     regional_grid = config['grids']['regional']

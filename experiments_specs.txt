@@ -15,8 +15,8 @@ runs:
           lat_min: -20.0
           lat_max: -2.0
         resolution:
-          dx: 1
-          dy: 1
+          dx: 0.5
+          dy: 0.5
         name: REGIONAL_GRID
       transition:
         bounds:
@@ -25,8 +25,8 @@ runs:
           lat_min: -14.5
           lat_max: -11.0
         resolution:
-          dx: 0.2
-          dy: 0.2
+          dx: 0.1
+          dy: 0.1
         name: TRANSITION_GRID
     time:
       start: 2024-12-01
@@ -48,47 +48,47 @@ runs:
         wave: DATA/WAVE
         bathy: DATA/BATHY
 
-#  - name: southern_peru_dec2024  # Second run
-#    experiment_type: storm
-#    region: southern_peru
-#    rotation: 25  # degrees
-#    grids:
-#      regional:
-#        bounds:
-#          lon_min: -73.0
-#          lon_max: -70.3
-#          lat_min: -18.3
-#          lat_max: -17.0
-#        resolution:
-#          dx: 0.05
-#          dy: 0.05
-#        name: REGIONAL_GRID
-#      transition:
-#        bounds:
-#          lon_min: -71.5
-#          lon_max: -71
-#          lat_min: -18.1
-#          lat_max: -17.6
-#        resolution:
-#          dx: 0.01
-#          dy: 0.01
-#        name: TRANSITION_GRID
-#    time:
-#      start: 2024-12-15
-#      end: 2025-01-15
-#      frequency: hourly
-#    base:
-#      path: /Users/daniela/Documents/swan/swan_experiments/
-#    output:
-#      directory: run_storm_event_southern_peru_waverys
-#      subdirectories:
-#        - QGIS
-#        - SWAN/01_geometry
-#        - SWAN/02_bc_dbase
-#        - SWAN/03_simulation
-#        - SWAN/04_results
-#        - SWAN/05_processed_results
-#      data:
-#        wind: DATA/WIND
-#        wave: DATA/WAVE
-#        bathy: DATA/BATHY
+  - name: southern_peru_dec2024  # Second run
+    experiment_type: storm
+    region: southern_peru
+    rotation: 25  # degrees
+    grids:
+      regional:
+        bounds:
+          lon_min: -73.0
+          lon_max: -70.3
+          lat_min: -18.3
+          lat_max: -17.0
+        resolution:
+          dx: 0.05
+          dy: 0.05
+        name: REGIONAL_GRID
+      transition:
+        bounds:
+          lon_min: -71.5
+          lon_max: -71
+          lat_min: -18.1
+          lat_max: -17.6
+        resolution:
+          dx: 0.01
+          dy: 0.01
+        name: TRANSITION_GRID
+    time:
+      start: 2024-12-15
+      end: 2025-01-15
+      frequency: hourly
+    base:
+      path: /Users/daniela/Documents/swan/swan_experiments/
+    output:
+      directory: run_storm_event_southern_peru_waverys
+      subdirectories:
+        - QGIS
+        - SWAN/01_geometry
+        - SWAN/02_bc_dbase
+        - SWAN/03_simulation
+        - SWAN/04_results
+        - SWAN/05_processed_results
+      data:
+        wind: DATA/WIND
+        wave: DATA/WAVE
+        bathy: DATA/BATHY

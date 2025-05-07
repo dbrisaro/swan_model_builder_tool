@@ -39,12 +39,7 @@ timeUnit = SEC
 """
     return config_str
 
-def main(config_path):
-    # Read configuration from experiments specs
-    config_file = Path(config_path)
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
-        
+def main(config):
 
     base_path = Path(config['base']['path'])
     output_dir = base_path / config['output']['directory'] / 'SWAN'

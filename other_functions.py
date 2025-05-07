@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Functions for processing SWAN results"""
 
-import os
-import sys
 import numpy as np
 from netCDF4 import Dataset
 from scipy.io import loadmat
@@ -166,8 +164,6 @@ def convertMat2Nc(matFile, ncFile, isRotated, isNonSpherical):
         ncOut[name][ii] = data
 
     ncOut.close()
-
-
 
 
 def extractSwanTs(inFile, outFile, pointsFile):
