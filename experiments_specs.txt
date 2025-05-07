@@ -47,6 +47,23 @@ runs:
         wind: DATA/WIND
         wave: DATA/WAVE
         bathy: DATA/BATHY
+    analysis:
+      points:
+        - name: Paita
+          lon: -81.1
+          lat: -5.1
+        - name: Chicama
+          lon: -79.5
+          lat: -7.7
+        - name: Callao
+          lon: -77.1
+          lat: -12.0
+        - name: Ilo
+          lon: -71.3
+          lat: -17.6
+      dates:
+        start: 24/12/2024
+        end: 03/01/2025
 
   - name: southern_peru_dec2024  # Second run
     experiment_type: storm
