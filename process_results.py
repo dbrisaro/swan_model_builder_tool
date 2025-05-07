@@ -28,8 +28,8 @@ def check_nc_file(nc_file):
     
     # Print basic information
     print("\nDimensions:")
-    for dim, size in ds.dims.items():
-        print(f"  {dim}: {size}")
+    for dim_name, size in ds.sizes.items():
+        print(f"  {dim_name}: {size}")
     
     print("\nVariables:")
     for var in ds.variables:
@@ -78,7 +78,7 @@ def plot_daily_mean_hsig(nc_file, output_dir, start_date, end_date):
     ds['time'] = pd.to_datetime(ds.time.values, unit='s')
     
     # Select time period
-    start = pd.to_datetime(start_date)
+    start = pd.to_datetime(start_date, dayfirst=True)
     end = pd.to_datetime(end_date)
     ds_period = ds.sel(time=slice(start, end))
     
@@ -147,7 +147,6 @@ def plot_daily_mean_hsig(nc_file, output_dir, start_date, end_date):
     cbar.set_label('Hsig [m]')
     
     # Adjust layout and save
-    plt.tight_layout()
     grid_name = Path(nc_file).stem.split('_')[0]
     plt.savefig(maps_dir / f'{grid_name}_daily_mean_hsig.png',
                bbox_inches='tight', dpi=300)
@@ -249,15 +248,15 @@ def main():
     # Set up paths using base_path from config
     base_path = Path(config['base']['path'])
     results_dir = base_path / config['output']['directory'] / 'SWAN/04_results'
-    output_dir = base_path / config['output']['directory'] / 'processed_results'
+    output_dir = base_path / config['output']['directory'] / 'SWAN/05_processed_results'
     
     # Process results
     process_mat_files(results_dir, output_dir)
     
-    # Generate maps and time series for each NetCDF file
-    for nc_file in output_dir.glob('*.nc'):
-        plot_daily_mean_hsig(str(nc_file), output_dir, start_date, end_date)
-        extract_time_series(str(nc_file), output_dir, start_date, end_date)
+    # # Generate maps and time series for each NetCDF file
+    # for nc_file in output_dir.glob('*.nc'):
+    #     plot_daily_mean_hsig(str(nc_file), output_dir, start_date, end_date)
+    #     extract_time_series(str(nc_file), output_dir, start_date, end_date)
 
 if __name__ == '__main__':
     main()

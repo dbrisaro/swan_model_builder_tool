@@ -22,6 +22,9 @@ def parse_specs(config_path):
     """Parse the configuration file to get grid specifications."""
     config = configparser.ConfigParser()
     config.read(config_path)
+
+    # Get rotation
+    rotation = config['rotation']
     
     # Get regional grid specs
     regional = config['REGIONAL GRID']
@@ -32,7 +35,7 @@ def parse_specs(config_path):
         'lat_max': float(regional['lat_max']),
         'x_len': float(regional['x_len']),
         'y_len': float(regional['y_len']),
-        'rotation': float(regional.get('rotation', 0.0))  # Default to 0 if not specified
+        'rotation': float(rotation)
     }
     
     # Get transition grid specs
@@ -44,7 +47,7 @@ def parse_specs(config_path):
         'lat_max': float(transition['lat_max']),
         'x_len': float(transition['x_len']),
         'y_len': float(transition['y_len']),
-        'rotation': float(transition.get('rotation', 0.0))  # Default to 0 if not specified
+        'rotation': float(rotation)
     }
     
     return regional_specs, transition_specs
@@ -79,6 +82,9 @@ def main(config_path):
     ax.add_feature(cfeature.COASTLINE)
     ax.add_feature(cfeature.LAND, facecolor='lightgray')
     ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
+    
+    # Get rotation
+    rotation = config['rotation']
 
     # Regional grid
     reg = config['grids']['regional']
@@ -86,7 +92,7 @@ def main(config_path):
         reg['bounds']['lon_min'], reg['bounds']['lon_max'],
         reg['bounds']['lat_min'], reg['bounds']['lat_max'],
         reg['resolution']['dx'], reg['resolution']['dy'],
-        25.0  # rotation angle in degrees
+        rotation=rotation
     )
     ax.scatter(reg_points[:,0], reg_points[:,1], color='red', s=2, alpha=0.7, 
                label='Regional Grid', transform=ccrs.PlateCarree())
@@ -97,7 +103,7 @@ def main(config_path):
         trans['bounds']['lon_min'], trans['bounds']['lon_max'],
         trans['bounds']['lat_min'], trans['bounds']['lat_max'],
         trans['resolution']['dx'], trans['resolution']['dy'],
-        25.0  # rotation angle in degrees
+        rotation=rotation
     )
     ax.scatter(trans_points[:,0], trans_points[:,1], color='blue', s=2, alpha=0.7, 
                label='Transition Grid', transform=ccrs.PlateCarree())

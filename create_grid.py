@@ -27,8 +27,6 @@ def check_bounds(bounds, grid_name):
         print(f"  lat_min ({lat_min}) should be less than lat_max ({lat_max})")
 
 def main(config_path):
-    # Parse experiments specifications
-
     ########
     #SAME AS generate_config, so a single function should work for both
     config_file = Path(config_path)
@@ -45,9 +43,11 @@ def main(config_path):
     check_bounds(transition_grid['bounds'], transition_grid['name'])
     
     # Create output directory
-
     base_path = Path(config['base']['path'])
     output_dir = base_path / config['output']['directory'] / 'QGIS'
+
+    # Rotation of the grids
+    rotation = config['rotation']
     
     # Create regional grid
     regional = create_rectangular_grid(
@@ -58,7 +58,7 @@ def main(config_path):
         regional_grid['resolution']['dx'],
         regional_grid['resolution']['dy'],
         regional_grid['name'],
-        rotation=25.0  # Rotar 45 grados
+        rotation=rotation 
     )
     regional['grid_type'] = 'regional'  # Add type field
     
@@ -71,7 +71,7 @@ def main(config_path):
         transition_grid['resolution']['dx'],
         transition_grid['resolution']['dy'],
         transition_grid['name'],
-        rotation=25.0  # Rotar 45 grados
+        rotation=rotation
     )
     transition['grid_type'] = 'transition'  # Add type field
     

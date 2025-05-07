@@ -5,7 +5,6 @@ from pathlib import Path
 from swan_functions import SwanBuilder
 from functions.mdatetime import *
 
-
 def read_experiment_config(config_file):
     """Read experiment configuration from YAML file."""
     with open(config_file, 'r') as f:

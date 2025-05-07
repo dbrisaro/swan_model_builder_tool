@@ -6,7 +6,9 @@ import sys
 import numpy as np
 from netCDF4 import Dataset
 from scipy.io import loadmat
+from scipy.io.matlab import mio5_params
 from functions.mdatetime import *
+import warnings
 
 def convertMat2Nc(matFile, ncFile, isRotated, isNonSpherical):
     """Converts a SWAN result file from .mat to .nc format"""
@@ -47,14 +49,34 @@ def convertMat2Nc(matFile, ncFile, isRotated, isNonSpherical):
                  'Depth_standard_name' : 'depth'
                  }
 
-    inData = loadmat(matFile)
+    # Suppress MatReadWarning about duplicate variables
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=UserWarning, module='scipy.io.matlab')
+        inData = loadmat(matFile)
 
     # pull list of keys from .mat file
-    keys = inData.keys()
+    keys = list(inData.keys())  # Convert to list to avoid view changes during iteration
+    
+    # Filter out metadata keys
+    keys = [k for k in keys if not k.startswith('__')]
 
     # get the grid geometry
-    x = inData.pop('Xp')
-    y = inData.pop('Yp')
+    # Check if Xp and Yp are in the keys before trying to pop them
+    if 'Xp' in keys and 'Yp' in keys:
+        x = inData.pop('Xp')
+        y = inData.pop('Yp')
+        # Remove from keys list to avoid processing them again
+        keys.remove('Xp')
+        keys.remove('Yp')
+    else:
+        # Try to find them in the time series data
+        x_keys = [k for k in keys if k.startswith('Xp_')]
+        y_keys = [k for k in keys if k.startswith('Yp_')]
+        if x_keys and y_keys:
+            x = inData[x_keys[0]]
+            y = inData[y_keys[0]]
+        else:
+            raise ValueError("Could not find grid coordinates (Xp, Yp) in the .mat file")
 
     # if grid is 1D, convert to 2D array for consistency
     if (x.ndim == 1) and (y.ndim == 1):
@@ -104,8 +126,8 @@ def convertMat2Nc(matFile, ncFile, isRotated, isNonSpherical):
     # write data to netCDF4
     ii = 0
     for key in keys:
-        # skip magic keys
-        if '__' in key:
+        # Skip coordinate variables
+        if key.startswith('Xp_') or key.startswith('Yp_'):
             continue
 
         # get parts of key
