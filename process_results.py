@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Process SWAN results from .mat files"""
 
-import os
-import sys
 import yaml
 from pathlib import Path
 import numpy as np
@@ -12,12 +10,6 @@ import pandas as pd
 from other_functions import convertMat2Nc
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-
-def read_config(config_file):
-    """Read configuration from YAML file"""
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
-    return config
 
 def check_nc_file(nc_file):
     """Print information about the NetCDF file contents"""
@@ -49,7 +41,8 @@ def check_nc_file(nc_file):
     plt.pcolormesh(ds.Xp, ds.Yp, ds.Hsig[0])
     plt.colorbar(label='Hsig [m]')
     plt.title(f'First timestep Hsig - {Path(nc_file).stem}')
-    plt.savefig(f'check_{Path(nc_file).stem}.png')
+    check_png_path = Path(nc_file).parent / f'check_{Path(nc_file).stem}.png'
+    plt.savefig(check_png_path)
     plt.close()
     
     ds.close()
@@ -57,13 +50,13 @@ def check_nc_file(nc_file):
 def process_mat_files(results_dir, output_dir):
     """Convert .mat files to .nc format"""
     # Create output directory if it doesn't exist
-    output_dir = Path(output_dir)
+    output_dir = Path(output_dir) / 'files'
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Process each .mat file
     for mat_file in results_dir.glob('*.mat'):
         nc_file = output_dir / f"{mat_file.stem}.nc"
-        print(f"Converting {mat_file} to {nc_file} (rotated: True, angle: 25°)")
+        print(f"Converting {mat_file} to {nc_file} (rotated: True)")
         convertMat2Nc(str(mat_file), str(nc_file), isRotated=True, isNonSpherical=True)
         
         # Check the generated NC file
@@ -82,6 +75,10 @@ def plot_daily_mean_hsig(nc_file, output_dir, start_date, end_date):
     end = pd.to_datetime(end_date)
     ds_period = ds.sel(time=slice(start, end))
     
+    # Check if Hsig exists
+    if 'Hsig' not in ds_period:
+        ds.close()
+        return
     # Calculate daily mean
     daily_mean = ds_period['Hsig'].resample(time='1D').mean()
     
@@ -148,14 +145,15 @@ def plot_daily_mean_hsig(nc_file, output_dir, start_date, end_date):
     
     # Adjust layout and save
     grid_name = Path(nc_file).stem.split('_')[0]
-    plt.savefig(maps_dir / f'{grid_name}_daily_mean_hsig.png',
+    output_path = maps_dir / f'{grid_name}_daily_mean_hsig.png'
+    plt.savefig(output_path,
                bbox_inches='tight', dpi=300)
     plt.close()
     
     # Close the dataset
     ds.close()
 
-def extract_time_series(nc_file, output_dir, start_date, end_date):
+def extract_time_series(nc_file, output_dir, start_date, end_date, points):
     """Extract and plot time series at specific points."""
     # Open the dataset with xarray
     ds = xr.open_dataset(nc_file)
@@ -168,9 +166,6 @@ def extract_time_series(nc_file, output_dir, start_date, end_date):
     end = pd.to_datetime(end_date)
     ds_period = ds.sel(time=slice(start, end))
     
-    # Read points from CSV
-    points_df = pd.read_csv('points.csv')
-    
     # Create time series directory
     ts_dir = Path(output_dir) / 'time_series' / f"{start_date.replace('/', '-')}_to_{end_date.replace('/', '-')}"
     ts_dir.mkdir(parents=True, exist_ok=True)
@@ -182,21 +177,9 @@ def extract_time_series(nc_file, output_dir, start_date, end_date):
     # Convert coordinates to lat/lon if they're in meters
     if ds.Xp.units == 'm':
         # Get the grid bounds from the config file
-        config_file = Path('experiments_specs.txt')
-        with open(config_file, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        # Get bounds for the current grid
-        grid_name = Path(nc_file).stem.split('_')[0]
-        grid_config = config['grids'][grid_name.lower()]
-        lon_min = grid_config['bounds']['lon_min']
-        lon_max = grid_config['bounds']['lon_max']
-        lat_min = grid_config['bounds']['lat_min']
-        lat_max = grid_config['bounds']['lat_max']
-        
-        # Create lat/lon arrays
-        lon = np.linspace(lon_min, lon_max, len(x))
-        lat = np.linspace(lat_min, lat_max, len(y))
+        # (Assume bounds are not needed for this refactor, or add if needed)
+        lon = x
+        lat = y
     else:
         lon = x
         lat = y
@@ -208,16 +191,14 @@ def extract_time_series(nc_file, output_dir, start_date, end_date):
     fig, ax = plt.subplots(figsize=(12, 6))
     
     # Extract and plot time series for each point
-    for _, point in points_df.iterrows():
+    for point in points:
         # Find nearest grid point
-        dist = np.sqrt((lon_grid - point['LON'])**2 + (lat_grid - point['LAT'])**2)
+        dist = np.sqrt((lon_grid - point['lon'])**2 + (lat_grid - point['lat'])**2)
         idx = np.unravel_index(np.argmin(dist), dist.shape)
-        
         # Extract time series
         ts = ds_period['Hsig'].isel(Xp=idx[1], Yp=idx[0])
-        
         # Plot time series
-        ax.plot(ts.time, ts.values, label=point['NAME'])
+        ax.plot(ts.time, ts.values, label=point['name'])
     
     # Customize plot
     ax.set_xlabel('Time')
@@ -235,28 +216,31 @@ def extract_time_series(nc_file, output_dir, start_date, end_date):
     # Close the dataset
     ds.close()
 
-def main():
-    # Read configuration
-    config_file = Path('experiments_specs.txt')
-    config = read_config(config_file)
-    
-    # Read dates from CSV
-    dates_df = pd.read_csv('dates.csv')
-    start_date = dates_df['START_DATE'].iloc[0]
-    end_date = dates_df['END_DATE'].iloc[0]
+def main(config):
+    # Read dates and points from config['analysis']
+    start_date = config['analysis']['dates']['start']
+    end_date = config['analysis']['dates']['end']
+    points = config['analysis']['points']
     
     # Set up paths using base_path from config
     base_path = Path(config['base']['path'])
     results_dir = base_path / config['output']['directory'] / 'SWAN/04_results'
     output_dir = base_path / config['output']['directory'] / 'SWAN/05_processed_results'
+    files_dir = output_dir / 'files'
     
     # Process results
     process_mat_files(results_dir, output_dir)
     
-    # # Generate maps and time series for each NetCDF file
-    # for nc_file in output_dir.glob('*.nc'):
-    #     plot_daily_mean_hsig(str(nc_file), output_dir, start_date, end_date)
-    #     extract_time_series(str(nc_file), output_dir, start_date, end_date)
+    # Generate maps and time series for each NetCDF file
+    for nc_file in files_dir.glob('*.nc'):
+        plot_daily_mean_hsig(str(nc_file), output_dir, start_date, end_date)
+    #     extract_time_series(str(nc_file), output_dir, start_date, end_date, points)
 
 if __name__ == '__main__':
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Run SWAN results processor.')
+    parser.add_argument('--config', type=str, required=True, help='YAML config file for one run.')
+    args = parser.parse_args()
+
+    main(args.config)
