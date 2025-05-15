@@ -13,11 +13,8 @@ def read_experiment_config(config_file):
     with open(config_file, 'r') as f:
         return yaml.safe_load(f)
 
-def main():
-    # Read configuration
-    config_file = Path('/Users/daniela/Documents/swan/swan_experiments/experiments_specs.txt')
-    config = read_experiment_config(config_file)
-    
+def main(config):
+
     # API key and client setup
     c = cdsapi.Client()
     

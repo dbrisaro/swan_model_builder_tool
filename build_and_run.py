@@ -4,30 +4,7 @@ import yaml
 from pathlib import Path
 from swan_functions import SwanBuilder
 from functions.mdatetime import *
-
-def generate_file_name(prefix, start_date, end_date, lat_min, lat_max, lon_min, lon_max, extension, frequency=None):
-    """Generate file name using grid boundaries and dates.
-    
-    Parameters
-    ----------
-    prefix : str
-        File prefix (e.g., 'gebco', 'wind', 'wave')
-    start_date : str
-        Start date in YYYYMMDD format
-    end_date : str
-        End date in YYYYMMDD format
-    lat_min, lat_max, lon_min, lon_max : float
-        Grid boundaries
-    extension : str
-        File extension (e.g., '.tif', '.nc')
-    frequency : str, optional
-        Data frequency (e.g., 'hourly', 'daily', 'monthly')
-    """
-    if prefix == 'gebco':
-        return f"{prefix}_{start_date}_n{lat_max:.1f}_s{lat_min:.1f}_w{lon_min:.1f}_e{lon_max:.1f}{extension}"
-    else:
-        freq_str = f"_{frequency}" if frequency else ""
-        return f"{prefix}_data{freq_str}_{start_date[:4]}-{start_date[4:6]}-{start_date[6:]}_{end_date[:4]}-{end_date[4:6]}-{end_date[6:]}_{lon_min:.1f}_{lon_max:.1f}_{lat_min:.1f}_{lat_max:.1f}{extension}"
+from functions.data import generate_filename
 
 def check_file_exists(file_path, file_type):
     """Check if a file exists and return its path if it does."""
@@ -49,52 +26,58 @@ def format_date_for_filename(date_obj):
 
 def main(config):
 
-    # Get grid boundaries from regional grid
-    regional_grid = config['grids']['regional']
-    lat_min = regional_grid['bounds']['lat_min']
-    lat_max = regional_grid['bounds']['lat_max']
+    start_date = config['analysis']['dates']['start']
+    end_date = config['analysis']['dates']['end']
+    regional_grid = config['grids']['regional'] 
     lon_min = regional_grid['bounds']['lon_min']
     lon_max = regional_grid['bounds']['lon_max']
-    
-    # Get dates and format them for SWAN
-    start_date = format_date_for_swan(config['time']['start'])
-    end_date = format_date_for_swan(config['time']['end'])
-    
-    # Get frequency from config
-    frequency = config['time']['frequency']
-    
-    # Generate file names (using original dates for filenames)
-    bathy_file = generate_file_name('gebco', '2024', '2024', lat_min, lat_max, lon_min, lon_max, '.tif')
-    wind_file = generate_file_name('wind', 
-                                 format_date_for_filename(config['time']['start']), 
-                                 format_date_for_filename(config['time']['end']), 
-                                 lat_min, lat_max, lon_min, lon_max, '.nc',
-                                 frequency)
-    wave_file = generate_file_name('wave', 
-                                 format_date_for_filename(config['time']['start']), 
-                                 format_date_for_filename(config['time']['end']), 
-                                 lat_min, lat_max, lon_min, lon_max, '.nc',
-                                 frequency)
-    
-    # Set up paths
+    lat_min = regional_grid['bounds']['lat_min']
+    lat_max = regional_grid['bounds']['lat_max']
 
     base_path = Path(config['base']['path'])
-    output_dir = base_path / config['output']['directory']
+    output_dir = Path(config['output']['directory'])
+    wind_dir = config['output']['data']['wind']
+    wave_dir = config['output']['data']['wave']
+    bathy_dir = config['output']['data']['bathy']
+    # Get frequency from config
+    frequency = config['time']['frequency']
+    filename_wave = generate_filename(
+        'wave_data', frequency, start_date, end_date,
+        {'lon_min': lon_min, 'lon_max': lon_max, 'lat_min': lat_min, 'lat_max': lat_max}
+    )
+    filename_wind = generate_filename(
+        'wind_data', frequency, start_date, end_date,
+        {'lon_min': lon_min, 'lon_max': lon_max, 'lat_min': lat_min, 'lat_max': lat_max}
+    )
+
+    # Generar nombres de archivo usando generate_filename
+    # filename_bathy = f"gebco_{start_date_file}_{lat_min}_{lat_max}_{lon_min}_{lon_max}.tif"
     
+    
+    output_dir_wave = base_path / output_dir / wave_dir
+    output_path_wave = output_dir_wave / filename_wave
+
+    output_dir_wind = base_path / output_dir / wind_dir
+    output_path_wind = output_dir_wind / filename_wind
+
+    # output_dir_bathy = base_path / output_dir / bathy_dir
+    # output_path_bathy = output_dir_bathy / filename_bathy
+
     # Check if all required files exist
-    bathy_path = output_dir / 'DATA/BATHY' / bathy_file
-    wind_path = output_dir / 'DATA/WIND' / wind_file
-    wave_path = output_dir / 'DATA/WAVE' / wave_file
-    grid_path = output_dir / 'QGIS/swan_grids.shp'
-    
+    # bathy_path = output_dir / 'DATA/BATHY' / bathy_file
+
+    wind_path = output_path_wind
+    wave_path = output_path_wave
+    grid_path = base_path / output_dir / 'QGIS/swan_grids.shp'
+
     print(f"Checking required files:")
-    print(f"Bathymetry: {bathy_path}")
+    # print(f"Bathymetry: {bathy_path}")
     print(f"Wind: {wind_path}")
     print(f"Wave: {wave_path}")
     print(f"Grid: {grid_path}")
-    
+
     if not all([
-        check_file_exists(bathy_path, "Bathymetry"),
+        # check_file_exists(bathy_path, "Bathymetry"),
         check_file_exists(wind_path, "Wind"),
         check_file_exists(wave_path, "Wave"),
         check_file_exists(grid_path, "Grid")
@@ -102,24 +85,25 @@ def main(config):
         print("Error: One or more required files are missing. Please check the paths above.")
         sys.exit(1)
     
-    print(output_dir)
-    # Initialize builder
-    builder = SwanBuilder(
-        rootFolder=str(output_dir / 'SWAN'),
-        templateSource=str(Path(__file__).parent / 'template'),
-        configSource=str(output_dir / 'SWAN/CONFIG.ini'),
-        gridSource=str(grid_path),
-        bottomSource=[str(bathy_path)],
-        windSource=str(wind_path),
-        waveSource=str(wave_path)
-    )
+    # print(output_dir)
+    # # Initialize builder
+    # builder = SwanBuilder(
+    #     rootFolder=str(output_dir / 'SWAN'),
+    #     templateSource=str(Path(__file__).parent / 'template'),
+    #     configSource=str(output_dir / 'SWAN/CONFIG.ini'),
+    #     gridSource=str(grid_path),
+    #     bottomSource=[str(bathy_path)],
+    #     windSource=str(wind_path),
+    #     waveSource=str(wave_path)
+    # )
     
-    # Build and run
-    models = builder.buildRun(
-        timeStart=datenum(start_date),
-        timeEnd=datenum(end_date)
-    )
-    return models
+    # # Build and run
+    # models = builder.buildRun(
+    #     timeStart=datenum(start_date),
+    #     timeEnd=datenum(end_date)
+    # )
+    # return models
+    return None
 
 if __name__ == '__main__':
     import argparse

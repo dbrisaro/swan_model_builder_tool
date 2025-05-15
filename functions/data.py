@@ -72,4 +72,12 @@ def generate_filename(variable, frequency, start_date, end_date, bounds):
     str
         Generated filename
     """
-    return f"{variable}_{frequency}_{start_date}_{end_date}_{bounds['lon_min']}_{bounds['lon_max']}_{bounds['lat_min']}_{bounds['lat_max']}.nc" 
+    # Asegurarse de que las fechas estén en formato YYYY-MM-DD y sin '/'
+    start = str(start_date).replace('/', '-')
+    end = str(end_date).replace('/', '-')
+    # Formatear los límites con decimales
+    lon_min = f"{bounds['lon_min']}"
+    lon_max = f"{bounds['lon_max']}"
+    lat_min = f"{bounds['lat_min']}"
+    lat_max = f"{bounds['lat_max']}"
+    return f"{variable}_{frequency}_{start}_{end}_{lon_min}_{lon_max}_{lat_min}_{lat_max}.nc" 

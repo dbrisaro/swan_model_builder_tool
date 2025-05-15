@@ -33,7 +33,9 @@ runs:
       end: 2025-01-31
       frequency: hourly
     base:
-      path: I:/My Drive/projects/swan/
+      path: /Users/daniela/Documents/swan/swan_experiments/
+    source:
+      path: /Users/daniela/Documents/swan/swan_experiments/sources/
     output:
       directory: test_run1
       subdirectories:
@@ -95,7 +97,9 @@ runs:
       end: 2025-01-15
       frequency: hourly
     base:
-      path: I:/My Drive/projects/swan/
+      path: /Users/daniela/Documents/swan/swan_experiments/
+    source:
+      path: /Users/daniela/Documents/swan/swan_experiments/sources/
     output:
       directory: test_run2
       subdirectories:
@@ -109,3 +113,62 @@ runs:
         wind: DATA/WIND
         wave: DATA/WAVE
         bathy: DATA/BATHY
+
+
+  - name: peninsula_paracas  # Second run
+    experiment_type: storm
+    region: paracas
+    rotation: 0
+    grids:
+      regional:
+        bounds:
+          lon_min: -76.5
+          lon_max: -76.3
+          lat_min: -13.9
+          lat_max: -13.7
+        resolution:
+          dx: 0.1
+          dy: 0.1
+        name: REGIONAL_GRID
+      transition:
+        bounds:
+          lon_min: -76.475
+          lon_max: -76.3
+          lat_min: -13.85
+          lat_max: -13.75
+        resolution:
+          dx: 0.025
+          dy: 0.025
+        name: TRANSITION_GRID
+    time:
+      start: 2024-12-15
+      end: 2025-01-15
+      frequency: hourly
+    base:
+      path: /Users/daniela/Documents/swan/swan_experiments/
+    source:
+      path: /Users/daniela/Documents/swan/swan_experiments/sources/
+    output:
+      directory: run_peninsula_paracas
+      subdirectories:
+        - QGIS
+        - SWAN/01_geometry
+        - SWAN/02_bc_dbase
+        - SWAN/03_simulation
+        - SWAN/04_results
+        - SWAN/05_processed_results
+      data:
+        wind: DATA/WIND
+        wave: DATA/WAVE
+        bathy: DATA/BATHY
+    analysis:
+      points:
+        - name: terminal_paracas
+          lon: -76.29
+          lat: -13.80
+        - name: punto_waverys
+          lon: -76.2
+          lat: -13.80
+      dates:
+        start: 24/12/2024
+        end: 03/01/2025
