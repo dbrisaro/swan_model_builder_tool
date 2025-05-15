@@ -37,7 +37,7 @@ runs:
     source:
       path: /Users/daniela/Documents/swan/swan_experiments/sources/
     output:
-      directory: run_storm_event_peru_waverys_dec_2024
+      directory: test_run1
       subdirectories:
         - QGIS
         - SWAN/01_geometry
@@ -101,7 +101,7 @@ runs:
     source:
       path: /Users/daniela/Documents/swan/swan_experiments/sources/
     output:
-      directory: run_storm_event_southern_peru_waverys
+      directory: test_run2
       subdirectories:
         - QGIS
         - SWAN/01_geometry
