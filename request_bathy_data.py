@@ -9,11 +9,8 @@ from pathlib import Path
 from erddapy import ERDDAP
 import rasterio
 from functions.data import generate_date_lists, generate_filename
+import requests
 
-def read_experiment_config(config_file):
-    """Read experiment configuration from YAML file."""
-    with open(config_file, 'r') as f:
-        return yaml.safe_load(f)
     
 def main(config):
 
@@ -43,24 +40,37 @@ def main(config):
         server="https://oceanwatch.pifsc.noaa.gov/erddap",
         protocol="griddap",
     )
+
     dataset = "ETOPO_2022_v1_15s"
     e.dataset_id = dataset
 
-    # Update bounds
-    e.constraints.update(bounds_request)  
+    # Definir variable y slices para griddap
+    variable = "z"
+    lat_min = regional_grid['lat_min']
+    lat_max = regional_grid['lat_max']
+    lon_min = float(np.mod(regional_grid['lon_min'],360))
+    lon_max = float(np.mod(regional_grid['lon_max'],360))
+    # Construir la query manualmente para GeoTIFF
+    query = f"{variable}[({lat_min}):({lat_max})][({lon_min}):({lon_max})]"
+    base_url = e.get_download_url()[:-1]  # Quitar el ? final
+    base_url = base_url.replace('.nc', '.tif')  # Cambiar a GeoTIFF
+    url = f"{base_url}?{query}"
 
     base_path = Path(config['base']['path'])
     output_dir = base_path / config['output']['directory'] / config['output']['data']['bathy']
     output_dir.mkdir(parents=True, exist_ok=True)
     filename = output_dir / generate_filename('bathy_data', frequency, start_date, end_date, bounds)
+    filename = filename.with_suffix('.tif')  # Guardar como .tif
 
     # Print request details
     print("\nETOPO Request Details:")
     print("===================")
     print(f"Dataset: {dataset}")
-    print("\nRequest parameters:")
-    print(json.dumps(e.constraints, indent=2))
+    print("\nVariables:", variable)
+    print("Latitud:", lat_min, lat_max)
+    print("Longitud:", lon_min, lon_max)
     print(f"\nOutput file: {filename}")
+    print(f"\nDownload URL: {url}")
     
     # Ask for confirmation
     response = input("\nDo you want to proceed with this request? (yes/no): ")
@@ -68,12 +78,16 @@ def main(config):
         print("Request cancelled.")
         return
     
-    # Request data
-    ds = e.to_xarray()
-    ds['z'].squeeze().rename({
-        'latitude': 'y', 
-        'longitude': 'x'
-    }).rio.write_crs("EPSG:4326").rio.to_raster(filename)
+    # Descargar el archivo manualmente
+    print("\nDescargando datos...")
+    r = requests.get(url)
+    with open(filename, "wb") as f:
+        f.write(r.content)
+    print("Descarga completada.")
+
+    # Si quieres procesar el archivo descargado con rasterio, puedes hacerlo aquí
+    # ds = rasterio.open(filename)
+    # ...
 
 if __name__ == '__main__':
     import argparse
