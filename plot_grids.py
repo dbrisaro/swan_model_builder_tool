@@ -11,6 +11,7 @@ import geopandas as gpd
 import numpy as np
 import configparser
 import pandas as pd
+import matplotlib.cm as cm
 from math import cos, sin, radians
 
 def parse_specs(config):
@@ -61,6 +62,13 @@ def get_rotated_grid_points(lon_min, lon_max, lat_min, lat_max, x_len, y_len, ro
     return np.array(rot_points)
 
 def main(config):
+    
+    # Create output directory
+    base_path = Path(config['base']['path'])
+    output_dir = base_path / config['output']['directory'] / 'QGIS'
+
+    gdf = gpd.read_file(f'{output_dir}/swan_grids.shp')
+
     # Create figure with cartopy projection
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
@@ -69,8 +77,22 @@ def main(config):
     ax.add_feature(cfeature.COASTLINE)
     ax.add_feature(cfeature.LAND, facecolor='lightgray')
     ax.add_feature(cfeature.OCEAN, facecolor='lightblue')
+
+    # Create a color map
+    cmap = cm.get_cmap('RdYlBu', len(gdf))  # Use 'tab10' or any colormap you like
+
+    for i, row in gdf.iterrows():
+        grid_name = row['Name']
+        df_grid = pd.DataFrame(dict(
+            x = row.geometry.exterior.coords.xy[0],
+            y = row.geometry.exterior.coords.xy[1]
+        )).explode(['x','y'])
+
+        ax.scatter(df_grid['x'], df_grid['y'], color=cmap(i), s=2, alpha=0.75, 
+               label=grid_name, transform=ccrs.PlateCarree())
     
     # Get rotation
+    '''
     rotation = config['rotation']
 
     # Regional grid
@@ -94,6 +116,9 @@ def main(config):
     )
     ax.scatter(trans_points[:,0], trans_points[:,1], color='blue', s=2, alpha=0.7, 
                label='Transition Grid', transform=ccrs.PlateCarree())
+    '''
+
+    reg = config['grids']['regional']
 
     # Set plot limits with some padding
     ax.set_extent([
@@ -117,6 +142,7 @@ def main(config):
     plt.close()
 
 if __name__ == "__main__":
+    import argparse
     parser = argparse.ArgumentParser(description='Create and plot SWAN grids')
     parser.add_argument('--config', required=True, help='Path to the configuration file')
     args = parser.parse_args()
