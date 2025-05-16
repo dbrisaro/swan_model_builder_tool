@@ -115,7 +115,7 @@ runs:
         bathy: DATA/BATHY
 
 
-  - name: peninsula_paracas  # Second run
+  - name: peninsula_paracas  # Third run
     experiment_type: storm
     region: paracas
     rotation: 0

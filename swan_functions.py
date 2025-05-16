@@ -10,6 +10,8 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 import geopandas as gpd
+import rasterio
+from rasterio.transform import from_origin
 
 from scipy.io import loadmat
 from functions.spatial import *
@@ -457,12 +459,34 @@ def writeBottomGridBc(inFiles, outFile, swanModel):
 
     # iteratively inspect the raster at points (x, y)
     zp0 = np.zeros((ny*nx,), dtype=np.float64)*np.nan
+    
     for inFile in inFiles:
         if isMesh(inFile):
             zp1 = meshInspect(inFile, x.flatten(), y.flatten(), srs)
         else:
-            zp1 = rasterInspect(inFile, x.flatten(), y.flatten(), srs)
+            import rasterio
+            with rasterio.open(inFile) as src:
+                bounds = src.bounds
+                # Conversión robusta de longitudes
+                if bounds.left > 0 and np.any(x.flatten() < 0):
+                    x_to_use = x.flatten().copy()
+                    x_to_use[x_to_use < 0] += 360
+                elif bounds.left < 0 and np.any(x.flatten() > 180):
+                    x_to_use = x.flatten().copy()
+                    x_to_use[x_to_use > 180] -= 360
+                else:
+                    x_to_use = x.flatten()
 
+                # Ahora consulta usando x_to_use
+                vals = []
+                for xi, yi in zip(x_to_use, y.flatten()):
+                    for val in src.sample([(xi, yi)]):
+                        vals.append(val[0])
+                zp1 = np.array(vals)
+                # Reemplaza fill values por np.nan
+                FILL_VALUES = [-9969209968386869046778552952102584320.0, 9.96921e+36]
+                for fv in FILL_VALUES:
+                    zp1 = np.where(zp1 == fv, np.nan, zp1)
         # overwrite valid values
         zp0[np.isnan(zp1) == 0] = zp1[np.isnan(zp1) == 0]
 
@@ -471,6 +495,7 @@ def writeBottomGridBc(inFiles, outFile, swanModel):
     name, _ = os.path.splitext(os.path.split(outFile)[1])
     nametmp =  name + '.nc'
     checkFile = Path(folder) / nametmp
+
     meshWrite(checkFile, x.flatten(), y.flatten(), zp0, faces, swanModel.swanGrid.getSrs())
 
     # reshape to ny by nx array for SWAN format
@@ -478,6 +503,8 @@ def writeBottomGridBc(inFiles, outFile, swanModel):
 
     # open SWAN bottom grid output file
     with open(os.path.abspath(outFile), 'w') as f:
+
+
         # put the control file command in header (be sure to specify nhedf=3)
         template = \
             (
@@ -485,10 +512,14 @@ def writeBottomGridBc(inFiles, outFile, swanModel):
                     "READINP BOTTOM +1 '{file}' 3 3 FORMAT '(({nj}f8.2))'\n\n"
             )
 
+
+
         f.write(template.format(x0=x[0, 0], y0=y[0, 0], r=r, mx=(nx - 1), my=(ny - 1), dx=dx, dy=dy, file=outFile, nj=nx))
 
         # write out grid point elevations with read order 3
         np.savetxt(f, -1*zp0, '%8.2f', delimiter='')
+        print("Bathymetry file written")
+
 
 def writeWaveGridBc(inFile, outFile, swanModel, spread=12):
     """ERA5 parametric wave boundary condition using TPAR files"""

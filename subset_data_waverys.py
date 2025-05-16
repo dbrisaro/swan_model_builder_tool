@@ -62,8 +62,10 @@ def main(config):
     Main function to run the script.
     """
 
-    start_date = config['analysis']['dates']['start']
-    end_date = config['analysis']['dates']['end']
+    time_config = config['time']
+    start_date = time_config['start']
+    end_date = time_config['end']
+    frequency = time_config['frequency']
     regional_grid = config['grids']['regional'] 
     lon_min = regional_grid['bounds']['lon_min']
     lon_max = regional_grid['bounds']['lon_max']
@@ -73,6 +75,8 @@ def main(config):
     source_path = Path(config['source']['path'])
 
     # --- WAVE ---
+
+    ## HARDCODING THE FILE NAME
     ds_wave = xr.open_dataset(source_path / 'cmems_mod_glo_wav_myint_0.2deg_PT3H-i_1747134522272.nc')
     ds_wave_subset = subset_data_by_area(ds_wave, start_date, end_date, lon_min, lon_max, lat_min, lat_max)
     filename_wave = generate_filename(
@@ -86,6 +90,8 @@ def main(config):
     ds_wave_subset.to_netcdf(output_path_wave)
 
     # --- WIND ---
+    ## HARDCODING THE FILE NAME
+
     ds_wind = xr.open_dataset(source_path / 'cmems_obs-wind_glo_phy_nrt_l4_0.125deg_PT1H_1747134907346.nc')
     ds_wind_subset = subset_data_by_area(ds_wind, start_date, end_date, lon_min, lon_max, lat_min, lat_max)
     filename_wind = generate_filename(
