@@ -60,6 +60,7 @@ from shapely.geometry import Polygon
 import pandas as pd
 import geopandas as gpd
 
+'''
 def create_rectangular_grid(lon_min, lon_max, lat_min, lat_max, x_len, y_len, name='REGIONAL', rotation=0.0):
     """
     Creates a single rectangle as a GeoDataFrame with metadata and a rotated grid of points.
@@ -86,6 +87,78 @@ def create_rectangular_grid(lon_min, lon_max, lat_min, lat_max, x_len, y_len, na
     # Create original grid points
     lons = np.arange(lon_min, lon_max + x_len, x_len)
     lats = np.arange(lat_min, lat_max + y_len, y_len)
+    
+    # Create meshgrid of points
+    lon_grid, lat_grid = np.meshgrid(lons, lats)
+    original_points = list(zip(lon_grid.flatten(), lat_grid.flatten()))
+
+    # Convert rotation to radians
+    angle_rad = radians(rotation)
+
+    # Rotate each point around the center
+    rotated_points = []
+    for lon, lat in original_points:
+        # Translate to origin
+        x = lon - center_lon
+        y = lat - center_lat
+        
+        # Rotate
+        x_rot = x * cos(angle_rad) - y * sin(angle_rad)
+        y_rot = x * sin(angle_rad) + y * cos(angle_rad)
+        
+        # Translate back
+        new_lon = x_rot + center_lon
+        new_lat = y_rot + center_lat
+        
+        rotated_points.append((new_lon, new_lat))
+
+    # Create polygon from rotated points
+    polygon = Polygon(rotated_points)
+
+    # Create DataFrame with metadata and grid points
+    df = pd.DataFrame({
+        "Name": [name],
+        "Rotation": [rotation],
+        "X Length": [x_len],
+        "Y Length": [y_len],
+        "geometry": [polygon],
+        "grid_points": [rotated_points]  # Store the rotated grid points
+    })
+
+    gdf = gpd.GeoDataFrame(df, geometry='geometry', crs="EPSG:4326")
+
+    return gdf
+'''
+def create_rectangular_grid(lon_min, lon_max, lat_min, lat_max, x_len, y_len, name='REGIONAL', rotation=0.0):
+    """
+    Creates a single rectangle as a GeoDataFrame with metadata and a rotated grid of points.
+
+    Parameters:
+        lon_min (float): Minimum longitude
+        lon_max (float): Maximum longitude
+        lat_min (float): Minimum latitude
+        lat_max (float): Maximum latitude
+        x_len (float): X resolution in degrees
+        y_len (float): Y resolution in degrees
+        name (str): Name for the region
+        rotation (float): Rotation angle in degrees
+
+    Returns:
+        gpd.GeoDataFrame: A GeoDataFrame with one polygon and metadata
+    """
+    from math import cos, sin, radians
+
+    # Calculate center point
+    center_lon = (lon_min + lon_max) / 2
+    center_lat = (lat_min + lat_max) / 2
+    
+    # Calculate n_points
+    n_lon = int(np.ceil((lon_max-lon_min)/x_len))
+    n_lat = int(np.ceil((lat_max-lat_min)/y_len))
+
+    # Create original grid points
+    lons = np.linspace(lon_min, lon_max, n_lon)
+    lats = np.linspace(lat_min, lat_max, n_lat)
     
     # Create meshgrid of points
     lon_grid, lat_grid = np.meshgrid(lons, lats)
