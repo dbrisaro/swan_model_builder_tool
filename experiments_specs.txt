@@ -141,8 +141,8 @@ runs:
           dy: 0.01
         name: TRANSITION_GRID
     time:
-      start: 2024-12-01
-      end: 2025-01-30
+      start: 2024-12-15
+      end: 2025-01-15
       frequency: hourly
     base:
       path: /Users/daniela/Documents/swan/swan_experiments/
@@ -169,6 +169,9 @@ runs:
         - name: punto_waverys
           lon: -76.2
           lat: -13.80
+        - name: este_peninsula
+          lon: -76.41
+          lat: -13.79   
       dates:
-        start: 24/12/2024
-        end: 03/01/2025
+        start: 2024-12-15
+        end: 2025-01-15

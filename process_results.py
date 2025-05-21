@@ -87,7 +87,7 @@ def plot_daily_mean_hsig(nc_file, output_dir, start_date, end_date):
     vmax = daily_mean.max().values
     
     # Create maps directory
-    maps_dir = Path(output_dir) / 'maps' / f"{start_date.replace('/', '-')}_to_{end_date.replace('/', '-')}"
+    maps_dir = Path(output_dir) / 'maps' / f"{start_date}_to_{end_date}"
     maps_dir.mkdir(parents=True, exist_ok=True)
     
     # Calculate number of rows and columns for subplots
@@ -167,36 +167,24 @@ def extract_time_series(nc_file, output_dir, start_date, end_date, points):
     ds_period = ds.sel(time=slice(start, end))
     
     # Create time series directory
-    ts_dir = Path(output_dir) / 'time_series' / f"{start_date.replace('/', '-')}_to_{end_date.replace('/', '-')}"
+    ts_dir = Path(output_dir) / 'time_series' / f"{start_date}_to_{end_date}"
     ts_dir.mkdir(parents=True, exist_ok=True)
     
-    # Get coordinates
-    x = ds.Xp.values
-    y = ds.Yp.values
-    
-    # Convert coordinates to lat/lon if they're in meters
-    if ds.Xp.units == 'm':
-        # Get the grid bounds from the config file
-        # (Assume bounds are not needed for this refactor, or add if needed)
-        lon = x
-        lat = y
-    else:
-        lon = x
-        lat = y
-    
-    # Create a meshgrid for interpolation
-    lon_grid, lat_grid = np.meshgrid(lon, lat)
-    
+    # Get coordinates (Xp y Yp ya son 2D)
+    lon_grid = ds['Xp'].values  # (4, 5)
+    lat_grid = ds['Yp'].values  # (4, 5)
+
     # Create figure for time series
     fig, ax = plt.subplots(figsize=(12, 6))
-    
+
     # Extract and plot time series for each point
     for point in points:
         # Find nearest grid point
         dist = np.sqrt((lon_grid - point['lon'])**2 + (lat_grid - point['lat'])**2)
         idx = np.unravel_index(np.argmin(dist), dist.shape)
-        # Extract time series
-        ts = ds_period['Hsig'].isel(Xp=idx[1], Yp=idx[0])
+        print(f"Point: {point['name']}, idx: {idx}, idx[0] max: {lon_grid.shape[0]-1}, idx[1] max: {lon_grid.shape[1]-1}")
+        # Extract time series (ajustado el orden de los índices)
+        ts = ds_period['Hsig'].isel(Yp=idx[0], Xp=idx[1])
         # Plot time series
         ax.plot(ts.time, ts.values, label=point['name'])
     
@@ -234,9 +222,7 @@ def main(config):
     # Generate maps and time series for each NetCDF file
     for nc_file in files_dir.glob('*.nc'):
         plot_daily_mean_hsig(str(nc_file), output_dir, start_date, end_date)
-        print(f"\nFigure saved to: {output_dir / 'maps' / f'{Path(nc_file).stem}_daily_mean_hsig.png'}")
-
-        # extract_time_series(str(nc_file), output_dir, start_date, end_date, points)
+        extract_time_series(str(nc_file), output_dir, start_date, end_date, points)
 
 if __name__ == '__main__':
     import argparse
