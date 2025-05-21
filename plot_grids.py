@@ -88,7 +88,7 @@ def main(config):
             y = row.geometry.exterior.coords.xy[1]
         )).explode(['x','y'])
 
-        ax.scatter(df_grid['x'], df_grid['y'], color=cmap(i), s=2, alpha=0.75, 
+        ax.scatter(df_grid['x'], df_grid['y'], color=cmap(i), s=20, alpha=0.75, 
                label=grid_name, transform=ccrs.PlateCarree())
     
     # Get rotation
@@ -122,10 +122,10 @@ def main(config):
 
     # Set plot limits with some padding
     ax.set_extent([
-        reg['bounds']['lon_min'] - 1, 
-        reg['bounds']['lon_max'] + 1,
-        reg['bounds']['lat_min'] - 1, 
-        reg['bounds']['lat_max'] + 1
+        reg['bounds']['lon_min'] - .2, 
+        reg['bounds']['lon_max'] + .2,
+        reg['bounds']['lat_min'] - .2, 
+        reg['bounds']['lat_max'] + .2
     ], crs=ccrs.PlateCarree())
 
     # Add gridlines

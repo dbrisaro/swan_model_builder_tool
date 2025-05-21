@@ -17,6 +17,9 @@ from scipy.io import loadmat
 from functions.spatial import *
 from functions.mdatetime import *
 
+
+
+
 ## 
 def autoNestModels(models):
     """Detect nested models and apply default naming"""
@@ -403,8 +406,12 @@ def writeWindGridBc(inFile, outFile, swanModel):
 
     # check if points need to be transformed
     srsA = swanModel.swanGrid.getSrs()
+
     srsB = osr.SpatialReference()
-    srsB.ImportFromEPSG(4326)
+
+    result = srsB.ImportFromEPSG(4326)
+    if result != 0:
+        raise ValueError("No se pudo importar EPSG:4326 en srsB")
 
     transform = False
     if srsA is not None:
@@ -416,7 +423,16 @@ def writeWindGridBc(inFile, outFile, swanModel):
 
     # transform boundary to WGS84 if needed
     if transform:
+        
+        print('Aca estamos printeando el srsA')
+        print(srsA)
+
+        print('Aca estamos printeando el srsB')
+        print(srsB)
+
+
         xt, yt = transformPoints(mb[:, 0], mb[:, 1], srsA, srsB)
+
         mb = np.column_stack((xt, yt))
 
     # get the model x, y, and t limits

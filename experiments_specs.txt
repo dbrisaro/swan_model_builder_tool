@@ -122,27 +122,27 @@ runs:
     grids:
       regional:
         bounds:
-          lon_min: -76.5
-          lon_max: -76.3
+          lon_min: -76.6
+          lon_max: -76.2
           lat_min: -13.9
-          lat_max: -13.7
+          lat_max: -13.6
         resolution:
           dx: 0.1
           dy: 0.1
         name: REGIONAL_GRID
       transition:
         bounds:
-          lon_min: -76.475
-          lon_max: -76.3
+          lon_min: -76.41
+          lon_max: -76.26
           lat_min: -13.85
           lat_max: -13.75
         resolution:
-          dx: 0.025
-          dy: 0.025
+          dx: 0.01
+          dy: 0.01
         name: TRANSITION_GRID
     time:
-      start: 2024-12-15
-      end: 2025-01-15
+      start: 2024-12-01
+      end: 2025-01-30
       frequency: hourly
     base:
       path: /Users/daniela/Documents/swan/swan_experiments/

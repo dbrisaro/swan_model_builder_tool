@@ -234,7 +234,9 @@ def main(config):
     # Generate maps and time series for each NetCDF file
     for nc_file in files_dir.glob('*.nc'):
         plot_daily_mean_hsig(str(nc_file), output_dir, start_date, end_date)
-    #     extract_time_series(str(nc_file), output_dir, start_date, end_date, points)
+        print(f"\nFigure saved to: {output_dir / 'maps' / f'{Path(nc_file).stem}_daily_mean_hsig.png'}")
+
+        # extract_time_series(str(nc_file), output_dir, start_date, end_date, points)
 
 if __name__ == '__main__':
     import argparse

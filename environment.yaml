@@ -1,0 +1,26 @@
+name: climate-gdal-env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - numpy
+  - scipy
+  - matplotlib
+  - xarray
+  - netCDF4
+  - pandas
+  - geopandas
+  - shapely
+  - pyproj
+  - rasterio
+  - cartopy
+  - jupyterlab
+  - ipykernel
+  - tqdm
+  - requests
+  - pyyaml
+  - affine
+  - contextily
+  - cdsapi
+  - erddapy
+  - geopy
