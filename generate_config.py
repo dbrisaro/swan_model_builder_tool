@@ -19,11 +19,11 @@ maxMessages = 200
 maxError = 1
 gravity = 9.81
 rho = 1025
-maxDrag = 0.001
+maxDrag = 0.0025
 stationary = False
 spherical = True
 numDir = 36
-freqMin = 0.04
+freqMin = 0.05
 freqMax = 1.0
 numFreq = 34
 dAbsolute = 0.005
@@ -34,7 +34,7 @@ maxIterations = 5
 limiter = 0.01
 outputVars = XP YP HSIGN TPS PDIR DIR UBOT TMBOT FORCE DEPTH
 outputType = .mat
-timeStep = 1800
+timeStep = 10800
 timeUnit = SEC
 """
     return config_str

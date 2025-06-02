@@ -77,7 +77,9 @@ def main(config):
     # --- WAVE ---
 
     ## HARDCODING THE FILE NAME
-    ds_wave = xr.open_dataset(source_path / 'cmems_mod_glo_wav_myint_0.2deg_PT3H-i_1747134522272.nc')
+    # ds_wave = xr.open_dataset(source_path / 'cmems_mod_glo_wav_myint_0.2deg_PT3H-i_1747134522272.nc')
+    # ds_wave = xr.open_dataset(source_path / 'cmems_mod_glo_wav_myint_0.2deg_PT3H-i_1747996642698.nc')
+    ds_wave = xr.open_dataset(source_path / 'cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_1748618957444.nc')
     ds_wave_subset = subset_data_by_area(ds_wave, start_date, end_date, lon_min, lon_max, lat_min, lat_max)
     filename_wave = generate_filename(
         'wave_data', 'hourly', start_date, end_date,
@@ -86,13 +88,34 @@ def main(config):
     output_dir_wave = Path(config['base']['path']) / config['output']['directory'] / config['output']['data']['wave']
     output_dir_wave.mkdir(parents=True, exist_ok=True)
     output_path_wave = output_dir_wave / filename_wave
-    print(f"Saving subsetted wave data to {output_path_wave}")
-    ds_wave_subset.to_netcdf(output_path_wave)
 
+    encoding = {}
+    for var in ds_wave_subset.data_vars:
+        v = ds_wave_subset[var]
+        fill_value = v.attrs.get('_FillValue', None)
+        missing_value = v.attrs.get('missing_value', None)
+        # Harmonize: prefer _FillValue, fallback to missing_value, fallback to np.nan
+        if fill_value is not None and not np.isnan(fill_value):
+            chosen_fill = fill_value
+        elif missing_value is not None and not np.isnan(missing_value):
+            chosen_fill = missing_value
+        else:
+            chosen_fill = np.nan
+        encoding[var] = {'_FillValue': chosen_fill}
+        # Remove missing_value from attrs to avoid conflict
+        if 'missing_value' in v.attrs:
+            del v.attrs['missing_value']
+        # Optionally, also remove _FillValue from attrs (xarray will handle it via encoding)
+        if '_FillValue' in v.attrs:
+            del v.attrs['_FillValue']
+    print(f"Saving subsetted wave data to {output_path_wave}")
+    ds_wave_subset.to_netcdf(output_path_wave, encoding=encoding)
     # --- WIND ---
     ## HARDCODING THE FILE NAME
 
-    ds_wind = xr.open_dataset(source_path / 'cmems_obs-wind_glo_phy_nrt_l4_0.125deg_PT1H_1747134907346.nc')
+    # ds_wind = xr.open_dataset(source_path / 'cmems_obs-wind_glo_phy_nrt_l4_0.125deg_PT1H_1747134907346.nc')
+#    ds_wind = xr.open_dataset(source_path / 'cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H_1747996928764.nc')
+    ds_wind = xr.open_dataset(source_path / 'cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H_1748618921634.nc')
     ds_wind_subset = subset_data_by_area(ds_wind, start_date, end_date, lon_min, lon_max, lat_min, lat_max)
     filename_wind = generate_filename(
         'wind_data', 'hourly', start_date, end_date,

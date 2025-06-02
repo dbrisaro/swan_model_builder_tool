@@ -221,7 +221,11 @@ def main(config):
     
     # Generate maps and time series for each NetCDF file
     for nc_file in files_dir.glob('*.nc'):
-        plot_daily_mean_hsig(str(nc_file), output_dir, start_date, end_date)
+        
+        # Calculate number of days between start and end dates
+        days_diff = (pd.to_datetime(end_date) - pd.to_datetime(start_date)).days
+        if days_diff < 20:
+            plot_daily_mean_hsig(str(nc_file), output_dir, start_date, end_date)
         extract_time_series(str(nc_file), output_dir, start_date, end_date, points)
 
 if __name__ == '__main__':

@@ -175,3 +175,121 @@ runs:
       dates:
         start: 2024-12-15
         end: 2025-01-15
+
+
+  - name: puerto_pimentel  # Run on the nice port!
+    experiment_type: storm
+    region: pimentel
+    rotation: 0
+    grids:
+      regional:
+        bounds:
+          lon_min: -80.35 
+          lon_max: -79.85
+          lat_min: -7.0
+          lat_max: -6.6
+        resolution:
+          dx: 0.1
+          dy: 0.1
+        name: REGIONAL_GRID
+      transition:
+        bounds:
+          lon_min: -80.025
+          lon_max: -79.925
+          lat_min: -6.90
+          lat_max: -6.80
+        resolution:
+          dx: 0.02
+          dy: 0.02
+        name: TRANSITION_GRID
+    time:
+      start: 2020-01-10
+      end: 2025-01-20
+      frequency: hourly
+    base:
+      path: /Users/daniela/Documents/swan/swan_experiments/
+    source:
+      path: /Users/daniela/Documents/swan/swan_experiments/sources/
+    output:
+      directory: run_puerto_pimentel
+      subdirectories:
+        - QGIS
+        - SWAN/01_geometry
+        - SWAN/02_bc_dbase
+        - SWAN/03_simulation
+        - SWAN/04_results
+        - SWAN/05_processed_results
+      data:
+        wind: DATA/WIND
+        wave: DATA/WAVE
+        bathy: DATA/BATHY
+    analysis:
+      points:
+        - name: puerto_pimentel
+          lon: -79.93833889
+          lat: -6.834075
+        - name: punto_waverys
+          lon: -80.0
+          lat: -6.80
+      dates:
+        start: 2020-01-10
+        end: 2025-01-20
+
+
+  - name: caleta_vidal  # Run on the nice port!
+    experiment_type: storm
+    region: pimentel
+    rotation: 0
+    grids:
+      regional:
+        bounds:
+          lon_min: -78.2 
+          lon_max: -77.6
+          lat_min: -11
+          lat_max: -10.6
+        resolution:
+          dx: 0.1
+          dy: 0.1
+        name: REGIONAL_GRID
+      transition:
+        bounds:
+          lon_min: -77.9
+          lon_max: -77.6
+          lat_min: -10.90
+          lat_max: -10.80
+        resolution:
+          dx: 0.02
+          dy: 0.02
+        name: TRANSITION_GRID
+    time:
+      start: 2023-01-01
+      end: 2025-01-20
+      frequency: hourly
+    base:
+      path: /Users/daniela/Documents/swan/swan_experiments/
+    source:
+      path: /Users/daniela/Documents/swan/swan_experiments/sources/
+    output:
+      directory: run_caleta_vidal
+      subdirectories:
+        - QGIS
+        - SWAN/01_geometry
+        - SWAN/02_bc_dbase
+        - SWAN/03_simulation
+        - SWAN/04_results
+        - SWAN/05_processed_results
+      data:
+        wind: DATA/WIND
+        wave: DATA/WAVE
+        bathy: DATA/BATHY
+    analysis:
+      points:
+        - name: caleta_vidal
+          lon: -77.71
+          lat: -10.859
+        - name: punto_waverys
+          lon: -77.75
+          lat: -10.83333
+      dates:
+        start: 2023-01-01
+        end: 2025-01-20
