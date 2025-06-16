@@ -14,35 +14,6 @@ import pandas as pd
 import matplotlib.cm as cm
 from math import cos, sin, radians
 
-def parse_specs(config):
-    # Get rotation
-    rotation = config['rotation']
-    
-    # Get regional grid specs
-    regional = config['REGIONAL GRID']
-    regional_specs = {
-        'lon_min': float(regional['lon_min']),
-        'lon_max': float(regional['lon_max']),
-        'lat_min': float(regional['lat_min']),
-        'lat_max': float(regional['lat_max']),
-        'x_len': float(regional['x_len']),
-        'y_len': float(regional['y_len']),
-        'rotation': float(rotation)
-    }
-    
-    # Get transition grid specs
-    transition = config['TRANSITION GRID']
-    transition_specs = {
-        'lon_min': float(transition['lon_min']),
-        'lon_max': float(transition['lon_max']),
-        'lat_min': float(transition['lat_min']),
-        'lat_max': float(transition['lat_max']),
-        'x_len': float(transition['x_len']),
-        'y_len': float(transition['y_len']),
-        'rotation': float(rotation)
-    }
-    
-    return regional_specs, transition_specs
 
 def get_rotated_grid_points(lon_min, lon_max, lat_min, lat_max, x_len, y_len, rotation):
     center_lon = (lon_min + lon_max) / 2
@@ -90,33 +61,7 @@ def main(config):
 
         ax.scatter(df_grid['x'], df_grid['y'], color=cmap(i), s=20, alpha=0.75, 
                label=grid_name, transform=ccrs.PlateCarree())
-    
-    # Get rotation
-    '''
-    rotation = config['rotation']
 
-    # Regional grid
-    reg = config['grids']['regional']
-    reg_points = get_rotated_grid_points(
-        reg['bounds']['lon_min'], reg['bounds']['lon_max'],
-        reg['bounds']['lat_min'], reg['bounds']['lat_max'],
-        reg['resolution']['dx'], reg['resolution']['dy'],
-        rotation=rotation
-    )
-    ax.scatter(reg_points[:,0], reg_points[:,1], color='red', s=2, alpha=0.7, 
-               label='Regional Grid', transform=ccrs.PlateCarree())
-
-    # Transition grid
-    trans = config['grids']['transition']
-    trans_points = get_rotated_grid_points(
-        trans['bounds']['lon_min'], trans['bounds']['lon_max'],
-        trans['bounds']['lat_min'], trans['bounds']['lat_max'],
-        trans['resolution']['dx'], trans['resolution']['dy'],
-        rotation=rotation
-    )
-    ax.scatter(trans_points[:,0], trans_points[:,1], color='blue', s=2, alpha=0.7, 
-               label='Transition Grid', transform=ccrs.PlateCarree())
-    '''
 
     reg = config['grids']['regional']
 

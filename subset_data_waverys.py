@@ -62,6 +62,7 @@ def main(config):
     Main function to run the script.
     """
 
+    name = config['name']
     time_config = config['time']
     start_date = time_config['start']
     end_date = time_config['end']
@@ -75,11 +76,23 @@ def main(config):
     source_path = Path(config['source']['path'])
 
     # --- WAVE ---
-
-    ## HARDCODING THE FILE NAME
-    # ds_wave = xr.open_dataset(source_path / 'cmems_mod_glo_wav_myint_0.2deg_PT3H-i_1747134522272.nc')
-    # ds_wave = xr.open_dataset(source_path / 'cmems_mod_glo_wav_myint_0.2deg_PT3H-i_1747996642698.nc')
-    ds_wave = xr.open_dataset(source_path / 'cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_1748618957444.nc')
+    # Try multiple possible filenames for the wave dataset
+    wave_file_patterns = [
+        f"cmems_mod_glo_wav_anfc_0.083deg_PT3H-i_{name}.nc",
+        f"cmems_mod_glo_wav_my_0.2deg_PT3H-i_{name}.nc",
+        f"{name}" if str(name).endswith('.nc') else None
+    ]
+    wave_file = None
+    for pattern in wave_file_patterns:
+        if pattern is None:
+            continue
+        candidate = source_path / pattern
+        if candidate.exists():
+            wave_file = candidate
+            break
+    if wave_file is None:
+        raise FileNotFoundError(f"None of the expected wave files found in {source_path}. Tried: {[p for p in wave_file_patterns if p is not None]}")
+    ds_wave = xr.open_dataset(wave_file)
     ds_wave_subset = subset_data_by_area(ds_wave, start_date, end_date, lon_min, lon_max, lat_min, lat_max)
     filename_wave = generate_filename(
         'wave_data', 'hourly', start_date, end_date,
@@ -115,7 +128,7 @@ def main(config):
 
     # ds_wind = xr.open_dataset(source_path / 'cmems_obs-wind_glo_phy_nrt_l4_0.125deg_PT1H_1747134907346.nc')
 #    ds_wind = xr.open_dataset(source_path / 'cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H_1747996928764.nc')
-    ds_wind = xr.open_dataset(source_path / 'cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H_1748618921634.nc')
+    ds_wind = xr.open_dataset(source_path / f'cmems_obs-wind_glo_phy_my_l4_0.125deg_PT1H_{name}.nc')
     ds_wind_subset = subset_data_by_area(ds_wind, start_date, end_date, lon_min, lon_max, lat_min, lat_max)
     filename_wind = generate_filename(
         'wind_data', 'hourly', start_date, end_date,

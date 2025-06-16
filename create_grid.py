@@ -25,11 +25,13 @@ def main(config):
 
     # Get grid parameters
     regional_grid = config['grids']['regional'] 
-    transition_grid = config['grids']['transition']
+    transition_grid = config['grids'].get('transition', None)
     
-    # Check bounds for both grids
+    # Check bounds for regional grid
     check_bounds(regional_grid['bounds'], regional_grid['name'])
-    check_bounds(transition_grid['bounds'], transition_grid['name'])
+    # Check bounds for transition grid if present
+    if transition_grid is not None:
+        check_bounds(transition_grid['bounds'], transition_grid['name'])
     
     # Create output directory
     base_path = Path(config['base']['path'])
@@ -51,21 +53,24 @@ def main(config):
     )
     regional['grid_type'] = 'regional'  # Add type field
     
-    # Create transition grid
-    transition = create_rectangular_grid(
-        transition_grid['bounds']['lon_min'],
-        transition_grid['bounds']['lon_max'],
-        transition_grid['bounds']['lat_min'],
-        transition_grid['bounds']['lat_max'],
-        transition_grid['resolution']['dx'],
-        transition_grid['resolution']['dy'],
-        transition_grid['name'],
-        rotation=rotation
-    )
-    transition['grid_type'] = 'transition'  # Add type field
+    grids_list = [regional]
+    # Create transition grid if present
+    if transition_grid is not None:
+        transition = create_rectangular_grid(
+            transition_grid['bounds']['lon_min'],
+            transition_grid['bounds']['lon_max'],
+            transition_grid['bounds']['lat_min'],
+            transition_grid['bounds']['lat_max'],
+            transition_grid['resolution']['dx'],
+            transition_grid['resolution']['dy'],
+            transition_grid['name'],
+            rotation=rotation
+        )
+        transition['grid_type'] = 'transition'  # Add type field
+        grids_list.append(transition)
     
     # Combine grids into a single GeoDataFrame
-    combined_grids = gpd.GeoDataFrame(pd.concat([regional, transition], ignore_index=True))
+    combined_grids = gpd.GeoDataFrame(pd.concat(grids_list, ignore_index=True))
     
     # Save combined grids
     combined_grids.to_file(output_dir / 'swan_grids.shp')
